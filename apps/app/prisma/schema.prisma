@@ -1,6 +1,8 @@
-// Couche d'accès PostgreSQL (Prisma), utilisée côté serveur Nitro. Squelette uniquement.
-// Le modèle métier (profil candidat, offre, CV généré, metering…) sera ajouté
-// après le data model de THI-120. Ne PAS modéliser le métier ici pour l'instant.
+// Couche d'accès PostgreSQL (Prisma), utilisée côté serveur Nitro.
+// Modèle métier « profil candidat » (THI-123, WS-Auth+Profil) — data model THI-120 §2.
+// Périmètre de ce WS : users / profiles / experiences / skills / education.
+// Hors périmètre (WS dédiés) : job_offers + generations (THI-124), usage_* (THI-126),
+// tables satellites d'auth (sessions/accounts/verification → ajoutées par le WS Auth).
 
 generator client {
   provider = "prisma-client-js"
@@ -36,4 +38,120 @@ model DataGovernanceEvent {
 
   @@index([action])
   @@map("data_governance_event")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modèle métier — Profil candidat (THI-120 §2 · THI-123)
+//
+// Garde-fou produit : les compétences/expériences saisies ici sont la SEULE
+// source de vérité du futur moteur (THI-124). Aucune invention en aval ; la
+// provenance pointera vers ces lignes.
+//
+// RGPD : soft-delete (`deletedAt`) dès la modélisation. Un `deletedAt` non nul =
+// enregistrement supprimé logiquement, à exclure des lectures (cf. `notDeleted`)
+// et à purger physiquement par le job de rétention (DataGovernanceEvent).
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+// Compte utilisateur — ancre d'authentification (le WS Auth y greffera Better
+// Auth + ses tables satellites). Données auth hébergées en FR/UE (RGPD).
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  // Champs compatibles Better Auth (renseignés par le WS Auth) :
+  emailVerified Boolean   @default(false)
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime? // soft-delete RGPD (droit à l'effacement)
+
+  profile Profile?
+
+  @@index([deletedAt])
+  @@map("users")
+}
+
+// Profil candidat — 1-1 avec User. En-tête + résumé libres.
+model Profile {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline  String? // intitulé court (ex. « Développeur Full-Stack »)
+  summary   String? // résumé / accroche
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  experiences Experience[]
+  skills      Skill[]
+  education   Education[]
+
+  @@index([deletedAt])
+  @@map("profiles")
+}
+
+// Expérience professionnelle (n par profil). `orderIndex` = ordre d'affichage saisi.
+model Experience {
+  id          String    @id @default(uuid())
+  profileId   String
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  title       String
+  company     String
+  startDate   DateTime? @db.Date
+  endDate     DateTime? @db.Date // null = poste en cours
+  description String?
+  skillsUsed  String[] // compétences mobilisées, libellés libres déclarés
+  orderIndex  Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([profileId])
+  @@index([deletedAt])
+  @@map("experiences")
+}
+
+// Compétence RÉELLE déclarée par le candidat (source de vérité du moteur).
+model Skill {
+  id         String      @id @default(uuid())
+  profileId  String
+  profile    Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  label      String
+  level      SkillLevel?
+  years      Int? // années d'expérience déclarées
+  orderIndex Int         @default(0)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  deletedAt  DateTime?
+
+  @@index([profileId])
+  @@index([deletedAt])
+  @@map("skills")
+}
+
+// Formation / diplôme (n par profil).
+model Education {
+  id          String    @id @default(uuid())
+  profileId   String
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  degree      String
+  school      String
+  startDate   DateTime? @db.Date
+  endDate     DateTime? @db.Date
+  description String?
+  orderIndex  Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([profileId])
+  @@index([deletedAt])
+  @@map("education")
 }
