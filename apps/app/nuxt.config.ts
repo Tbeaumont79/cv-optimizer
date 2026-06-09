@@ -34,13 +34,22 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    // DATABASE_URL est lue côté serveur uniquement (jamais exposée au client).
+    // Serveur uniquement (jamais exposées au client).
     databaseUrl: process.env.DATABASE_URL,
+    // Clé secrète Better Auth (BETTER_AUTH_SECRET en prod, min 32 chars).
+    authSecret: process.env.BETTER_AUTH_SECRET ?? 'dev-secret-change-in-prod-min32chars!!',
+    // SMTP optionnel (dev : log console ; prod : fournir SMTP_HOST).
+    smtpHost: process.env.SMTP_HOST ?? '',
+    smtpPort: process.env.SMTP_PORT ?? '587',
+    smtpUser: process.env.SMTP_USER ?? '',
+    smtpPass: process.env.SMTP_PASS ?? '',
+    mailFrom: process.env.MAIL_FROM ?? '',
+
     public: {
-      // URL canonique du site (SEO/OG/sitemap). Hébergement à arbitrer (CTO) :
-      // override via NUXT_PUBLIC_SITE_URL au déploiement. Placeholder tant que
-      // le domaine n'est pas tranché.
+      // URL canonique du site (SEO/OG/sitemap). Override via NUXT_PUBLIC_SITE_URL au déploiement.
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL ?? 'https://cv-optimizer.example.com',
+      // URL de base de l'app (utilisée par Better Auth pour générer les liens magic-link).
+      appUrl: process.env.APP_URL ?? 'http://localhost:3000',
     },
   },
 })
