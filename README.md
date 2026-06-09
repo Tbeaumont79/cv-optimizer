@@ -9,26 +9,32 @@ le data model (THI-120).
 > fausses compétences/expériences ; elle reformule et hiérarchise l'existant. À garder en
 > tête pour toute future couche de génération.
 
-## Stack (imposée par le brief)
+## Stack (architecture THI-120)
 
 | Couche | Techno |
 | --- | --- |
-| Front | Vue 3 + TypeScript **strict** + Tailwind v4 (design tokens) + Vite |
-| Back | NestJS + TypeScript **strict** |
+| Full-stack | **Nuxt 3** (Vue 3 + serveur **Nitro**), **TS strict** — un seul dépôt |
+| Styles | Tailwind v4 (design tokens, aucune valeur en dur) |
 | DB | PostgreSQL (cloud) via Prisma (ORM + migrations) |
 | Monorepo | pnpm workspaces |
 | CI | GitHub Actions, **PR-only** |
+
+> Le serveur Nitro porte l'API (`/api/*`) : tout le traitement sensible (profil, offre,
+> appels LLM, génération) reste côté serveur — aucune clé ni donnée brute exposée au client.
 
 ## Structure
 
 ```
 cv-optimizer/
 ├─ apps/
-│  ├─ web/      # Vue 3 + Tailwind (design tokens dans src/assets/main.css)
-│  └─ api/      # NestJS + Prisma (PostgreSQL)
+│  └─ app/         # Nuxt 3 full-stack : pages Vue + server/ (Nitro), Prisma
+│     ├─ assets/css/main.css   # design tokens Tailwind (@theme)
+│     ├─ components/ pages/     # front Vue
+│     ├─ server/api/health.get.ts  # GET /api/health (preuve de vie)
+│     └─ prisma/                # schema + migration init (squelette)
 ├─ packages/
-│  └─ shared/   # contrats TS partagés front ↔ back (@cvo/shared)
-├─ docs/rgpd.md # placeholder RGPD (cadrage = THI-120)
+│  └─ shared/      # contrats TS partagés client ↔ serveur (@cvo/shared)
+├─ docs/rgpd.md    # placeholder RGPD (cadrage = THI-120)
 └─ .github/workflows/ci.yml
 ```
 
@@ -42,23 +48,23 @@ cv-optimizer/
 pnpm install
 
 # 1. PostgreSQL local
-cp .env.example apps/api/.env        # DATABASE_URL local
-pnpm db:up                           # docker compose : postgres:16 sur :5432
+cp .env.example apps/app/.env       # DATABASE_URL local
+pnpm db:up                          # docker compose : postgres:16 sur :5432
 
 # 2. Migrations (crée le schéma)
-pnpm --filter @cvo/api prisma:migrate:deploy
+pnpm --filter @cvo/app prisma:migrate:deploy
 
-# 3. Lancer back + front
-pnpm dev                             # API :3000  ·  Web :5173
+# 3. Lancer l'app (front + API Nitro)
+pnpm dev                            # http://localhost:3000
 ```
 
-Front : http://localhost:5173 — la carte « Preuve de vie » appelle `GET /health`.
+Front : http://localhost:3000 — la carte « Preuve de vie » appelle `GET /api/health`.
 
 ### Preuve de vie (health check)
 
 ```bash
-curl -s http://localhost:3000/health
-# {"status":"ok","db":"up","service":"cvo-api","timestamp":"…"}
+curl -s http://localhost:3000/api/health
+# {"status":"ok","db":"up","service":"cvo-app","timestamp":"…"}
 ```
 
 Le même probe tourne **en CI** (job `health`) contre un PostgreSQL éphémère.
@@ -68,10 +74,10 @@ Le même probe tourne **en CI** (job `health`) contre un PostgreSQL éphémère.
 | Commande | Effet |
 | --- | --- |
 | `pnpm lint` | ESLint (TS + Vue) sur tout le repo |
-| `pnpm typecheck` | `tsc` / `vue-tsc` strict sur les 3 packages |
-| `pnpm build` | build shared → web → api |
-| `pnpm test` | tests unitaires (Vitest web · Jest api) |
-| `pnpm dev` | front + back en parallèle |
+| `pnpm typecheck` | `nuxt typecheck` (vue-tsc) + `tsc` strict |
+| `pnpm build` | build shared → app (Nuxt/Nitro) |
+| `pnpm test` | tests unitaires (Vitest) |
+| `pnpm dev` | app Nuxt en dev |
 | `pnpm db:up` / `pnpm db:down` | PostgreSQL local (Docker) |
 
 ## Règles d'ingénierie
@@ -79,8 +85,8 @@ Le même probe tourne **en CI** (job `health`) contre un PostgreSQL éphémère.
 - **PR-only** — aucun push direct sur `main`. **Seul Thibault merge.**
 - **PR > 400 lignes → split.**
 - **QA sur chaque PR** ; CI verte obligatoire (lint · typecheck · build · test · health).
-- **TS strict** des deux côtés ; pas de `any` non justifié.
-- **Tailwind : design tokens uniquement** (`apps/web/src/assets/main.css`), aucune valeur en dur.
+- **TS strict** ; pas de `any` non justifié.
+- **Tailwind : design tokens uniquement** (`apps/app/assets/css/main.css`), aucune valeur en dur.
 - FR-first, i18n-ready (pas d'exigence EN bloquante au MVP).
 - Cloud + PostgreSQL (≠ Bloom local-first).
 

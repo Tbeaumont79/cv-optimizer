@@ -1,0 +1,39 @@
+// Couche d'accès PostgreSQL (Prisma), utilisée côté serveur Nitro. Squelette uniquement.
+// Le modèle métier (profil candidat, offre, CV généré, metering…) sera ajouté
+// après le data model de THI-120. Ne PAS modéliser le métier ici pour l'instant.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RGPD-ready (placeholder structurel — cadrage détaillé = THI-120)
+// Emplacement prévu pour tracer les actions de gouvernance des données
+// personnelles : rétention, suppression (droit à l'effacement), export
+// (portabilité). Ce modèle n'est PAS le modèle métier ; il réserve la place
+// de la couche conformité que toutes les futures entités personnelles
+// référenceront.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum DataGovernanceAction {
+  RETENTION_APPLIED // purge selon la durée de conservation
+  ERASURE_REQUESTED // droit à l'effacement
+  EXPORT_REQUESTED // droit à la portabilité
+}
+
+model DataGovernanceEvent {
+  id         String               @id @default(uuid())
+  action     DataGovernanceAction
+  // Référence opaque vers le sujet concerné (ex. userId). Pas de FK tant que
+  // le modèle métier n'existe pas — placeholder volontaire.
+  subjectRef String?
+  createdAt  DateTime             @default(now())
+
+  @@index([action])
+  @@map("data_governance_event")
+}

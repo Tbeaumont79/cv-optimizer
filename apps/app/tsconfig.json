@@ -1,0 +1,4 @@
+{
+  // Nuxt génère .nuxt/tsconfig.json (strict, auto-imports, alias ~). On l'étend.
+  "extends": "./.nuxt/tsconfig.json"
+}

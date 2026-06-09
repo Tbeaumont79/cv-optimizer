@@ -1,0 +1,21 @@
+# Local-dev PostgreSQL only. Cloud DB est provisionnée par environnement (≠ Bloom local-first).
+services:
+  db:
+    image: postgres:16
+    container_name: cvo-postgres
+    environment:
+      POSTGRES_USER: cvo
+      POSTGRES_PASSWORD: cvo
+      POSTGRES_DB: cvo
+    ports:
+      - "5432:5432"
+    volumes:
+      - cvo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cvo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  cvo_pgdata: {}
