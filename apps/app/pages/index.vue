@@ -4,7 +4,7 @@ import { useLanding } from '~/composables/useLanding'
 import MagicLinkForm from '~/components/landing/MagicLinkForm.vue'
 
 // Copy 100 % issue de useLanding() — aucun texte en dur (DoD i18n FR-first).
-const { m, plans, faqJsonLd } = useLanding()
+const { m, brand, plans, faqJsonLd } = useLanding()
 
 const siteUrl = useRuntimeConfig().public.siteUrl
 
@@ -16,6 +16,7 @@ useHead({
   meta: [
     { name: 'description', content: m.meta.description },
     { property: 'og:type', content: 'website' },
+    { property: 'og:site_name', content: brand },
     { property: 'og:title', content: m.meta.title },
     { property: 'og:description', content: m.meta.description },
     { property: 'og:url', content: siteUrl },

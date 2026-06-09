@@ -17,7 +17,9 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'fr' },
-      title: 'CV Optimizer',
+      // Titre global de repli = nom de marque. La landing surcharge avec un
+      // <title> SEO dédié ; le nom vient du token BRAND (config/brand.ts).
+      title: 'Teven',
     },
   },
 
