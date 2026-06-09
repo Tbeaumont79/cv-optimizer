@@ -46,3 +46,41 @@ body,
 #__nuxt {
   height: 100%;
 }
+
+/* ─── Print / PDF (cible : Chromium headless, PR 3) ─────────────────────────
+ * Règles appliquées aussi bien au Ctrl+P du navigateur qu'au rendu Playwright.
+ * Objectif : margins A4, pas d'éléments d'interface, couleurs préservées.
+ */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm;
+  }
+
+  /* Supprime tout ce qui est hors du CV (barre d'actions, fond de page). */
+  body > *:not(#__nuxt),
+  #__nuxt > *:not(.cv-print-root) {
+    display: none !important;
+  }
+
+  .cv-page {
+    /* Force le blanc même si l'imprimante/Chromium applique un fond gris. */
+    background: white !important;
+    /* Annule les marges/padding de la page web (les @page margins suffisent). */
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  /* Évite les coupures de page à l'intérieur des expériences/sections. */
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  /* Préserve les couleurs de marque à l'impression (Chromium, Chrome). */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
