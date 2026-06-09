@@ -2,14 +2,21 @@
 node_modules/
 .pnpm-store/
 
+# Nuxt
+apps/app/.nuxt/
+apps/app/.output/
+apps/app/.data/
+.nitro/
+.cache/
+
 # Build output
 dist/
 build/
 *.tsbuildinfo
 
 # Prisma generated client
-apps/api/src/generated/
 **/.prisma/
+**/generated/prisma/
 
 # Env / secrets — never commit
 .env

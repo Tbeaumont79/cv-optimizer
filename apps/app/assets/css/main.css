@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — source unique de vérité (Tailwind v4 @theme).
+ * Règle d'équipe : AUCUNE valeur en dur dans les composants.
+ * On consomme ces tokens via les classes générées : bg-brand-600, text-ink-700,
+ * rounded-card, font-sans, etc. Le design system détaillé viendra avec l'UX/UI.
+ */
+@theme {
+  /* Couleur de marque (placeholder neutre tant que le branding n'est pas tranché) */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+
+  /* Texte */
+  --color-ink-500: #6b7280;
+  --color-ink-700: #374151;
+  --color-ink-900: #111827;
+
+  /* États sémantiques */
+  --color-success-500: #16a34a;
+  --color-danger-500: #dc2626;
+
+  /* Surfaces */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f9fafb;
+
+  /* Typographie */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Rayons nommés */
+  --radius-card: 0.75rem;
+}
+
+html,
+body,
+#__nuxt {
+  height: 100%;
+}

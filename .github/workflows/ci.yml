@@ -37,7 +37,7 @@ jobs:
         run: pnpm test
 
   health:
-    name: Health check (front+back, live)
+    name: Health check (Nuxt full-stack, live)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -65,25 +65,23 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Build shared + API
+      - name: Build shared + app
         run: |
           pnpm build:shared
-          pnpm --filter @cvo/api build
+          pnpm --filter @cvo/app build
       - name: Apply DB migrations
-        run: pnpm --filter @cvo/api prisma:migrate:deploy
-      - name: Boot API and probe /health
+        run: pnpm --filter @cvo/app prisma:migrate:deploy
+      - name: Boot Nuxt server and probe /api/health
         run: |
-          node apps/api/dist/main.js &
-          API_PID=$!
+          node apps/app/.output/server/index.mjs &
+          SRV_PID=$!
           ok=0
           for _ in $(seq 1 30); do
-            if curl -fs http://localhost:3000/health > /tmp/health.json; then ok=1; break; fi
+            if curl -fs http://localhost:3000/api/health > /tmp/health.json; then ok=1; break; fi
             sleep 2
           done
-          if [ "$ok" != "1" ]; then echo "API never became healthy"; kill $API_PID || true; exit 1; fi
+          if [ "$ok" != "1" ]; then echo "Server never became healthy"; kill $SRV_PID || true; exit 1; fi
           echo "Health response:"; cat /tmp/health.json; echo
           grep -q '"db":"up"' /tmp/health.json
           grep -q '"status":"ok"' /tmp/health.json
-          kill $API_PID || true
-      - name: Build web (front health build)
-        run: pnpm --filter @cvo/web build
+          kill $SRV_PID || true
