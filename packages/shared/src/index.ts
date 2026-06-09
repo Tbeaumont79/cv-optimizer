@@ -1,9 +1,8 @@
 /**
- * Contrats partagés client ↔ serveur (Nitro).
- * Le modèle métier (profil, offre, CV…) arrivera après le data model de THI-120.
- * Pour l'instant : uniquement le contrat du health check (preuve de vie).
+ * Contrats partagés client ↔ serveur (Nitro) et frontière Moteur ↔ Génération.
  */
 
+// Health check (preuve de vie — scaffold THI-122).
 export type HealthState = 'ok' | 'degraded'
 export type DependencyState = 'up' | 'down'
 
@@ -20,3 +19,7 @@ export interface HealthStatus {
 }
 
 export const HEALTH_PATH = '/api/health' as const
+
+// Contrat du CV structuré + garde-fou de provenance (THI-124 ↔ THI-125).
+export * from './cv'
+export * from './provenance'
