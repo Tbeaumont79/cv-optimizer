@@ -1,0 +1,89 @@
+name: CI
+
+# PR-only : la CI tourne sur les pull requests vers main. Aucun push direct n'est
+# qualifié (seul Thibault merge, via PR validée).
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint · Typecheck · Build · Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Build
+        run: pnpm build
+      - name: Test
+        run: pnpm test
+
+  health:
+    name: Health check (front+back, live)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cvo
+          POSTGRES_PASSWORD: cvo
+          POSTGRES_DB: cvo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cvo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://cvo:cvo@localhost:5432/cvo?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build shared + API
+        run: |
+          pnpm build:shared
+          pnpm --filter @cvo/api build
+      - name: Apply DB migrations
+        run: pnpm --filter @cvo/api prisma:migrate:deploy
+      - name: Boot API and probe /health
+        run: |
+          node apps/api/dist/main.js &
+          API_PID=$!
+          ok=0
+          for _ in $(seq 1 30); do
+            if curl -fs http://localhost:3000/health > /tmp/health.json; then ok=1; break; fi
+            sleep 2
+          done
+          if [ "$ok" != "1" ]; then echo "API never became healthy"; kill $API_PID || true; exit 1; fi
+          echo "Health response:"; cat /tmp/health.json; echo
+          grep -q '"db":"up"' /tmp/health.json
+          grep -q '"status":"ok"' /tmp/health.json
+          kill $API_PID || true
+      - name: Build web (front health build)
+        run: pnpm --filter @cvo/web build
