@@ -4,8 +4,6 @@
  * - Profil candidat (THI-123) → ./profile.
  */
 
-export * from './profile'
-
 export type HealthState = 'ok' | 'degraded'
 export type DependencyState = 'up' | 'down'
 
@@ -23,9 +21,15 @@ export interface HealthStatus {
 
 export const HEALTH_PATH = '/api/health' as const
 
+// Profil candidat — SEULE source de contenu du moteur (THI-123).
+export * from './profile'
+
 // Contrat du CV structuré + garde-fou de provenance (THI-124 ↔ THI-125).
 export * from './cv'
 export * from './provenance'
 
 // Metering & quotas (THI-126) — mesure d'usage + base billing freemium.
 export * from './usage'
+
+// Analyse d'offre — consignes de tri/reformulation du moteur (THI-124).
+export * from './offer'
