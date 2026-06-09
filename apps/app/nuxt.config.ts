@@ -34,5 +34,11 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // DATABASE_URL est lue côté serveur uniquement (jamais exposée au client).
     databaseUrl: process.env.DATABASE_URL,
+    public: {
+      // URL canonique du site (SEO/OG/sitemap). Hébergement à arbitrer (CTO) :
+      // override via NUXT_PUBLIC_SITE_URL au déploiement. Placeholder tant que
+      // le domaine n'est pas tranché.
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL ?? 'https://cv-optimizer.example.com',
+    },
   },
 })
