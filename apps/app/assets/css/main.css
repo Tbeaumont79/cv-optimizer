@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /*
  * Design tokens — source unique de vérité (Tailwind v4 @theme).
@@ -7,31 +7,38 @@
  * rounded-card, font-sans, etc. Le design system détaillé viendra avec l'UX/UI.
  */
 @theme {
-  /* Couleur de marque (placeholder neutre tant que le branding n'est pas tranché) */
+  /* Couleur de marque (placeholder neutre tant que le branding n'est pas tranché —
+     le naming/branding final viendra du CMO via THI-121 → ajuster ici uniquement). */
   --color-brand-50: #eff6ff;
   --color-brand-100: #dbeafe;
+  --color-brand-400: #60a5fa;
   --color-brand-500: #3b82f6;
   --color-brand-600: #2563eb;
   --color-brand-700: #1d4ed8;
 
-  /* Texte */
+  /* Texte & neutres */
+  --color-ink-100: #f3f4f6;
+  --color-ink-300: #d1d5db;
   --color-ink-500: #6b7280;
   --color-ink-700: #374151;
   --color-ink-900: #111827;
 
   /* États sémantiques */
   --color-success-500: #16a34a;
+  --color-warning-500: #d97706;
   --color-danger-500: #dc2626;
 
-  /* Surfaces */
+  /* Surfaces & bordures */
   --color-surface: #ffffff;
   --color-surface-muted: #f9fafb;
+  --color-border: #e5e7eb;
 
   /* Typographie */
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
   /* Rayons nommés */
   --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
 }
 
 html,
