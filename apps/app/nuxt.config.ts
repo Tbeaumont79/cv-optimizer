@@ -1,4 +1,5 @@
 import tailwindcss from '@tailwindcss/vite'
+import type { PluginOption } from 'vite'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -23,8 +24,11 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   // Tailwind v4 via le plugin Vite officiel ; tokens dans assets/css/main.css.
+  // @tailwindcss/vite est typé contre Vite 7 (celui que Nuxt 3.21 embarque à
+  // l'exécution), mais une copie de types Vite 5 traîne dans le graphe → le cast
+  // aligne les types sans rien changer au runtime (build/dev restent verts).
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss() as PluginOption],
   },
 
   runtimeConfig: {
