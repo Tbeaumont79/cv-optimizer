@@ -1,8 +1,11 @@
 /**
  * Contrats partagés client ↔ serveur (Nitro) et frontière Moteur ↔ Génération.
+ * - Health check (preuve de vie — scaffold THI-122).
+ * - Profil candidat (THI-123) → ./profile.
  */
 
-// Health check (preuve de vie — scaffold THI-122).
+export * from './profile'
+
 export type HealthState = 'ok' | 'degraded'
 export type DependencyState = 'up' | 'down'
 
