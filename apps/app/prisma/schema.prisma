@@ -155,3 +155,59 @@ model Education {
   @@index([deletedAt])
   @@map("education")
 }
+
+// Metering — usage_events + usage_counters (THI-120 §2 · THI-126)
+//
+// On mesure l'usage DÈS le MVP (même gratuit) pour préparer le billing freemium.
+// `userId` est volontairement un identifiant simple indexé (pas de relation Prisma
+// vers `users`) : ce WS reste additif et indépendant de l'ordre de merge des autres
+// lots (auth/profil/génération). La contrainte FK pourra être ajoutée plus tard.
+//
+// RGPD : on stocke des compteurs et des volumes de tokens — JAMAIS le contenu des
+// CV ni des offres.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UsageEventType {
+  GENERATION // génération d'un CV (Sonnet/Opus)
+  EXPORT_PDF // export PDF d'un CV
+  EXTRACTION // analyse / extraction de mots-clés d'une offre (Haiku)
+
+  @@map("usage_event_type")
+}
+
+// Événement d'usage unitaire — une ligne par génération / export / extraction.
+model UsageEvent {
+  id        String         @id @default(uuid())
+  userId    String
+  type      UsageEventType
+  // Période yyyymm dénormalisée (ex. "202606") — facilite l'agrégation / les purges.
+  period    String         @db.VarChar(6)
+  tokensIn  Int            @default(0)
+  tokensOut Int            @default(0)
+  // Facturable = compte dans la base billing (freemium). Gratuit ⇒ false au MVP.
+  billable  Boolean        @default(false)
+  createdAt DateTime       @default(now())
+
+  @@index([userId, period])
+  @@index([type])
+  @@map("usage_events")
+}
+
+// Agrégat d'usage par utilisateur et par période (yyyymm). Incrémenté à chaque
+// événement (upsert atomique). Une ligne par (userId, période).
+model UsageCounter {
+  id              String   @id @default(uuid())
+  userId          String
+  period          String   @db.VarChar(6)
+  generationCount Int      @default(0)
+  exportPdfCount  Int      @default(0)
+  extractionCount Int      @default(0)
+  tokensIn        Int      @default(0)
+  tokensOut       Int      @default(0)
+  billableCount   Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, period])
+  @@map("usage_counters")
+}

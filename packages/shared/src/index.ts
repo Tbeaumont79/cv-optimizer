@@ -26,3 +26,6 @@ export const HEALTH_PATH = '/api/health' as const
 // Contrat du CV structuré + garde-fou de provenance (THI-124 ↔ THI-125).
 export * from './cv'
 export * from './provenance'
+
+// Metering & quotas (THI-126) — mesure d'usage + base billing freemium.
+export * from './usage'
