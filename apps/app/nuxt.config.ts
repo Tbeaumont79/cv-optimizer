@@ -17,7 +17,9 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'fr' },
-      title: 'CV Optimizer',
+      // Titre global de repli = nom de marque. La landing surcharge avec un
+      // <title> SEO dédié ; le nom vient du token BRAND (config/brand.ts).
+      title: 'Teven',
     },
   },
 
@@ -34,5 +36,11 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // DATABASE_URL est lue côté serveur uniquement (jamais exposée au client).
     databaseUrl: process.env.DATABASE_URL,
+    public: {
+      // URL canonique du site (SEO/OG/sitemap). Hébergement à arbitrer (CTO) :
+      // override via NUXT_PUBLIC_SITE_URL au déploiement. Placeholder tant que
+      // le domaine n'est pas tranché.
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL ?? 'https://cv-optimizer.example.com',
+    },
   },
 })
