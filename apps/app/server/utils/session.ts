@@ -1,18 +1,18 @@
 /**
- * Résolution de l'utilisateur courant côté serveur (Nitro).
+ * Helpers de session serveur (Nitro).
  *
- * Découplage volontaire du lot Auth (THI-131) : on lit `event.context.userId`,
- * renseigné par le middleware d'authentification (Better Auth). Ce WS (THI-126)
- * n'importe donc pas l'instance auth, ce qui le garde indépendant de l'ordre de
- * merge. Quand le middleware d'auth est en place, l'id est disponible ici ;
- * sinon l'accès est refusé (401) plutôt que d'attribuer l'usage au mauvais compte.
+ * - `requireUserId` (THI-126) : lit `event.context.userId` posé par le middleware
+ *   d'auth (THI-134) et lève une 401 si absent. Découplé de l'instance Better Auth.
+ * - `getAuthSession` (THI-132) : récupère la session Better Auth complète depuis
+ *   l'événement (headers Web API via `toWebRequest`). Retourne null si non authentifié.
  */
 import { createError, type H3Event } from 'h3'
+import { auth } from './auth'
 
 // Le middleware d'auth renseigne l'id utilisateur dans le contexte de requête.
 declare module 'h3' {
   interface H3EventContext {
-    /** Id de l'utilisateur authentifié (renseigné par le middleware auth, THI-131). */
+    /** Id de l'utilisateur authentifié (renseigné par le middleware auth, THI-131/THI-134). */
     userId?: string
   }
 }
@@ -24,4 +24,10 @@ export function requireUserId(event: H3Event): string {
     throw createError({ statusCode: 401, statusMessage: 'Authentification requise' })
   }
   return userId
+}
+
+/** Récupère la session Better Auth complète (ou null si non authentifié). */
+export async function getAuthSession(event: H3Event) {
+  const req = toWebRequest(event)
+  return auth.api.getSession({ headers: req.headers })
 }
