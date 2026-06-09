@@ -1,8 +1,8 @@
 // Couche d'accès PostgreSQL (Prisma), utilisée côté serveur Nitro.
 // Modèle métier « profil candidat » (THI-123, WS-Auth+Profil) — data model THI-120 §2.
-// Périmètre de ce WS : users / profiles / experiences / skills / education.
-// Hors périmètre (WS dédiés) : job_offers + generations (THI-124), usage_* (THI-126),
-// tables satellites d'auth (sessions/accounts/verification → ajoutées par le WS Auth).
+// Périmètre de ce WS : users / profiles / experiences / skills / education +
+// tables satellites Better Auth : sessions / accounts / verifications (magic-link tokens).
+// Hors périmètre (WS dédiés) : job_offers + generations (THI-124), usage_* (THI-126).
 
 generator client {
   provider = "prisma-client-js"
@@ -72,7 +72,9 @@ model User {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime? // soft-delete RGPD (droit à l'effacement)
 
-  profile Profile?
+  profile  Profile?
+  sessions Session[]
+  accounts Account[]
 
   @@index([deletedAt])
   @@map("users")
@@ -211,3 +213,64 @@ model UsageCounter {
   @@unique([userId, period])
   @@map("usage_counters")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tables satellites Better Auth (THI-131, WS Auth magic-link)
+//
+// Schéma requis par Better Auth v1 (prismaAdapter, provider postgresql).
+// Noms de champs camelCase imposés par l'adaptateur.
+// Le magic-link plugin réutilise la table `verifications` pour stocker les tokens.
+// Ces tables ne portent PAS de soft-delete — Better Auth les gère en dur.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Sessions actives (expiration côté Better Auth).
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sessions")
+}
+
+// Comptes OAuth/credentials liés à un utilisateur (email = magic-link).
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("accounts")
+}
+
+// Tokens de vérification (magic-link, email verification…).
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+// Back-relations Better Auth sur User (ajoutées ici pour éviter de modifier
+// le bloc User déjà posé dans le data model slice 1).
+// Prisma les génère via la relation inverse côté Session/Account.
