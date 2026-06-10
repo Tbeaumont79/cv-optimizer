@@ -78,7 +78,7 @@ const year = new Date().getFullYear()
 <template>
   <div class="flex min-h-full flex-col bg-surface-muted">
     <header class="sticky top-0 z-40 border-b border-border bg-surface/80 backdrop-blur">
-      <div class="mx-auto flex h-16 w-full max-w-4xl items-center justify-between gap-4 px-6">
+      <div class="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-6">
         <div class="flex min-w-0 items-center gap-6">
           <NuxtLink
             to="/"
@@ -188,12 +188,12 @@ const year = new Date().getFullYear()
       </div>
     </header>
 
-    <main class="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
+    <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
       <slot />
     </main>
 
     <footer class="border-t border-border bg-surface-muted">
-      <div class="mx-auto w-full max-w-4xl px-6 py-10">
+      <div class="mx-auto w-full max-w-6xl px-6 py-10">
         <div class="flex flex-col gap-10 sm:flex-row sm:items-start sm:justify-between">
           <div class="max-w-xs space-y-3">
             <NuxtLink
