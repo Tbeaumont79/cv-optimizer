@@ -16,6 +16,7 @@ let unsubscribeSession: (() => void) | undefined
 const userInitial = computed(() => user.value?.email?.charAt(0)?.toUpperCase() ?? '?')
 
 const navLinks = [
+  { label: 'Nouvelle candidature', to: '/candidature' },
   { label: 'Mon profil', to: '/profil' },
   { label: 'Mon CV', to: '/cv/demo' },
 ] as const
