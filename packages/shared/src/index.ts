@@ -33,3 +33,6 @@ export * from './usage'
 
 // Analyse d'offre — consignes de tri/reformulation du moteur (THI-124).
 export * from './offer'
+
+// Score de match + contrats API du flux « Nouvelle candidature ».
+export * from './match'

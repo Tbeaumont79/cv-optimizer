@@ -36,6 +36,8 @@ export interface LlmRequest {
   maxTokens?: number
   /** Effort de raisonnement (Sonnet 4.6 / Opus uniquement). */
   effort?: 'low' | 'medium' | 'high'
+  /** Callback de mesure : tokens consommés (JAMAIS de contenu). Pour le metering. */
+  onUsage?: (usage: { inputTokens: number; outputTokens: number }) => void
 }
 
 /** Contrat d'appel LLM injectable — réimplémenté par un faux dans les tests. */
@@ -74,6 +76,8 @@ export const anthropicComplete: LlmComplete = async (req) => {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) throw new LlmError('ANTHROPIC_API_KEY manquante')
   const model = req.model ?? DEFAULT_MODEL
+  // Override pour proxy d'entreprise ou mock de test E2E (défaut : API publique).
+  const baseUrl = process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com'
 
   const body: Record<string, unknown> = {
     model,
@@ -87,7 +91,7 @@ export const anthropicComplete: LlmComplete = async (req) => {
     },
   }
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch(`${baseUrl}/v1/messages`, {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
@@ -103,7 +107,10 @@ export const anthropicComplete: LlmComplete = async (req) => {
     content?: { type: string; text?: string }[]
     usage?: { input_tokens?: number; output_tokens?: number }
   }
-  logCost(req.costLabel, model, data.usage?.input_tokens ?? 0, data.usage?.output_tokens ?? 0)
+  const inputTokens = data.usage?.input_tokens ?? 0
+  const outputTokens = data.usage?.output_tokens ?? 0
+  logCost(req.costLabel, model, inputTokens, outputTokens)
+  req.onUsage?.({ inputTokens, outputTokens })
 
   if (data.stop_reason === 'refusal') throw new LlmError('Réponse refusée par le modèle')
   const text = data.content?.find((b) => b.type === 'text')?.text
