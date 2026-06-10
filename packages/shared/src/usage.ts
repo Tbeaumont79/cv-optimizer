@@ -2,8 +2,9 @@
  * Metering & quotas (THI-126) — contrats partagés client ↔ serveur (Nitro).
  *
  * On mesure l'usage DÈS le MVP même si tout est gratuit, pour préparer le billing
- * freemium (abo ~9–15 €/mois). Pas de paywall Stripe au MVP : les quotas sont
- * paramétrables et appliqués côté serveur, mais aucune facturation n'est branchée.
+ * à crédits (2 générations offertes puis packs — voir config/pricing.ts). Pas de
+ * paywall Stripe au MVP : les quotas sont paramétrables et appliqués côté serveur,
+ * mais aucune facturation n'est branchée.
  *
  * Les fonctions de ce module sont PURES (aucun accès base / framework) → testables
  * unitairement et réutilisables côté front pour afficher l'usage courant.
@@ -58,12 +59,13 @@ export const EMPTY_USAGE_SNAPSHOT: UsageCounterSnapshot = {
 export type UsageQuotas = Partial<Record<UsageEventType, number>>
 
 /**
- * Palier gratuit du MVP. Pas de paywall : on autorise quelques générations/exports
- * gratuits par mois. À surcharger via config quand le billing freemium arrivera.
+ * Palier gratuit — modèle acté (2026-06) : 2 générations offertes pour tester,
+ * ensuite achat de crédits (config/pricing.ts). Les exports PDF sont plus larges
+ * (ré-export d'un CV déjà généré) mais bornés pour éviter l'abus de Chromium.
  */
 export const FREE_TIER_QUOTAS: UsageQuotas = {
-  generation: 5,
-  export_pdf: 5,
+  generation: 2,
+  export_pdf: 4,
 }
 
 /** État d'un quota pour un type donné, à afficher / à appliquer. */

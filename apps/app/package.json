@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@cvo/shared": "workspace:*",
+    "@lucide/vue": "^1.17.0",
     "@prisma/client": "^6.2.1",
     "better-auth": "^1.6.15",
     "nodemailer": "^8.0.10",
@@ -24,6 +25,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@nuxt/fonts": "^0.14.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^22.10.5",
     "@types/nodemailer": "^8.0.0",

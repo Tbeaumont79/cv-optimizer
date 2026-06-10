@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { ArrowLeft, MailCheck } from '@lucide/vue'
+import { BRAND } from '~/config/brand'
+
 definePageMeta({ layout: false }) // page plein-écran, pas de nav connectée
 
 const { signIn, pending, error } = useAuth()
+const toast = useToast()
 
 const email = ref('')
 const sent = ref(false)
@@ -11,67 +15,100 @@ async function handleSubmit() {
   const ok = await signIn(email.value)
   if (ok) sent.value = true
 }
+
+async function handleResend() {
+  if (!email.value) return
+  const ok = await signIn(email.value)
+  if (ok) toast.success('Lien renvoyé', `Jette un œil à ta boîte ${email.value}.`)
+}
+
+function changeEmail() {
+  sent.value = false
+  email.value = ''
+}
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-surface-muted px-4">
-    <div class="w-full max-w-sm bg-surface rounded-card shadow p-8 space-y-6">
-      <div class="text-center space-y-1">
-        <h1 class="text-xl font-semibold text-ink-900">Connexion</h1>
-        <p class="text-sm text-ink-500">CV Optimizer</p>
-      </div>
+  <div class="flex min-h-screen flex-col items-center justify-center bg-surface-muted px-4 py-10">
+    <NuxtLink
+      to="/"
+      class="mb-8 flex items-center gap-2 rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+      :aria-label="`${BRAND} — retour à l'accueil`"
+    >
+      <span
+        class="flex h-9 w-9 items-center justify-center rounded-control bg-brand-600 text-base font-bold text-white"
+        aria-hidden="true"
+      >
+        T
+      </span>
+      <span class="text-xl font-bold tracking-tight text-ink-900">{{ BRAND }}</span>
+    </NuxtLink>
 
+    <UiCard class="w-full max-w-md">
       <template v-if="!sent">
-        <form class="space-y-4" @submit.prevent="handleSubmit">
-          <div class="space-y-1">
-            <label for="email" class="block text-sm font-medium text-ink-700">
-              Adresse e-mail
-            </label>
-            <input
-              id="email"
-              v-model="email"
-              type="email"
-              required
-              autocomplete="email"
-              placeholder="vous@exemple.fr"
-              class="w-full rounded-card border border-ink-500/30 bg-surface px-3 py-2 text-sm text-ink-900 placeholder-ink-500 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
-              :disabled="pending"
-            />
-          </div>
+        <div class="mb-6 space-y-1.5 text-center">
+          <h1 class="text-xl font-semibold text-ink-900">Content de te revoir</h1>
+          <p class="text-sm text-ink-600">
+            Entre ton email, on t'envoie un lien magique. Pas de mot de passe à retenir.
+          </p>
+        </div>
 
-          <p v-if="error" role="alert" class="text-sm text-danger-500">{{ error }}</p>
+        <form class="space-y-4" novalidate @submit.prevent="handleSubmit">
+          <UiInput
+            v-model="email"
+            type="email"
+            label="Email"
+            placeholder="toi@exemple.fr"
+            required
+            :disabled="pending"
+            :error="error ?? undefined"
+          />
 
-          <button
-            type="submit"
-            :disabled="pending || !email"
-            class="w-full rounded-card bg-brand-600 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <span v-if="pending">Envoi en cours…</span>
-            <span v-else>Recevoir un lien de connexion</span>
-          </button>
+          <UiButton type="submit" class="w-full" :loading="pending" :disabled="!email">
+            Recevoir mon lien de connexion
+          </UiButton>
         </form>
 
-        <p class="text-xs text-center text-ink-500">
-          Pas de mot de passe. Vous recevrez un lien valable 10 minutes.
+        <p class="mt-4 text-center text-xs text-ink-500">
+          Le lien est valable 10 minutes. Rien à installer, rien à retenir.
         </p>
       </template>
 
-      <template v-else>
-        <div class="text-center space-y-3">
-          <p class="text-success-500 font-medium">✓ Lien envoyé !</p>
-          <p class="text-sm text-ink-700">
-            Consultez votre boîte e-mail (<strong>{{ email }}</strong>) et cliquez sur le lien pour
-            vous connecter.
+      <div v-else class="animate-fade-up space-y-5 text-center">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-success-50">
+          <MailCheck class="h-6 w-6 text-success-600" :stroke-width="1.75" aria-hidden="true" />
+        </div>
+
+        <div class="space-y-1.5">
+          <h1 class="text-xl font-semibold text-ink-900">Vérifie ta boîte mail</h1>
+          <p class="text-sm text-ink-600">
+            On vient d'envoyer un lien de connexion à
+            <strong class="font-semibold text-ink-900">{{ email }}</strong
+            >. Clique dessus pour continuer — il est valable 10 minutes.
           </p>
-          <p class="text-xs text-ink-500">Le lien est valable 10 minutes.</p>
+        </div>
+
+        <div class="flex flex-col items-center gap-2">
+          <UiButton variant="ghost" size="sm" :loading="pending" @click="handleResend">
+            Renvoyer le lien
+          </UiButton>
           <button
-            class="text-sm text-brand-600 hover:underline"
-            @click="sent = false"
+            type="button"
+            class="rounded-control text-sm text-brand-700 underline-offset-4 transition-colors duration-300 ease-out hover:text-brand-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            @click="changeEmail"
           >
             Utiliser une autre adresse
           </button>
         </div>
-      </template>
-    </div>
+      </div>
+    </UiCard>
+
+    <NuxtLink
+      to="/"
+      class="mt-8 inline-flex items-center gap-1.5 rounded-control text-sm text-ink-600 transition-colors duration-300 ease-out hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+    >
+      <ArrowLeft class="h-4 w-4" :stroke-width="2" aria-hidden="true" />
+      Retour à l'accueil
+    </NuxtLink>
   </div>
 </template>

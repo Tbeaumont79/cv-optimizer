@@ -1,22 +1,25 @@
 /**
  * Pricing — CONFIG, jamais figé en dur dans les composants.
  *
- * ⚠️ Arbitrage RÉSERVÉ AU RÉFÉRENT (pricing THI-119) : le montant exact et la
- * liste précise des features par plan sont à valider. Fourchette validée
- * 9–15 €/mois ; `PREMIUM_PRICE_EUR` est un PLACEHOLDER au milieu de la
- * fourchette, à confirmer avant tout go-live.
+ * Modèle acté (2026-06-10, fondateur) : 2 générations de CV OFFERTES pour tester,
+ * puis achat de PACKS DE CRÉDITS one-shot (Stripe Checkout, pas d'abonnement).
+ * 1 crédit = 1 génération de CV optimisé. Pas d'offre illimitée : c'est le seul
+ * scénario déficitaire (coût API ~0,30–0,40 € par génération, marge packs ~60 %).
  */
-export const PREMIUM_PRICE_EUR = 12 as const // placeholder 9–15 € — à arbitrer (THI-119)
 
-export interface PlanConfig {
-  /** clé i18n du plan dans i18n/fr.ts > pricing.plans */
-  key: 'free' | 'premium'
-  /** prix mensuel en € ; null = gratuit */
-  priceEur: number | null
+/** Générations offertes à l'inscription (aligné sur FREE_TIER_QUOTAS.generation). */
+export const FREE_GENERATIONS = 2 as const
+
+export interface CreditPackConfig {
+  /** clé i18n du pack dans i18n/fr.ts > pricing.packs */
+  key: 'starter' | 'standard'
+  priceEur: number
+  credits: number
+  /** Pack mis en avant visuellement (badge « Le plus populaire »). */
   featured: boolean
 }
 
-export const PLANS: readonly PlanConfig[] = [
-  { key: 'free', priceEur: null, featured: false },
-  { key: 'premium', priceEur: PREMIUM_PRICE_EUR, featured: true },
+export const CREDIT_PACKS: readonly CreditPackConfig[] = [
+  { key: 'starter', priceEur: 5, credits: 5, featured: false },
+  { key: 'standard', priceEur: 12, credits: 15, featured: true },
 ]

@@ -16,7 +16,9 @@ defineProps<{
       {{ label }}<span v-if="required" class="text-danger-500" aria-hidden="true"> *</span>
     </label>
     <slot />
-    <p v-if="error" :id="`${fieldId}-error`" class="text-sm text-danger-500">{{ error }}</p>
+    <p v-if="error" :id="`${fieldId}-error`" aria-live="polite" class="text-sm text-danger-600">
+      {{ error }}
+    </p>
     <p v-else-if="hint" :id="`${fieldId}-hint`" class="text-sm text-ink-500">{{ hint }}</p>
   </div>
 </template>

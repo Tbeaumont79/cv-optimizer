@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, useId } from 'vue'
+import { MailCheck } from '@lucide/vue'
 import { useLanding } from '~/composables/useLanding'
 
 /**
  * Formulaire d'inscription magic-link : champ e-mail + écran « lien envoyé ».
  * Microcopy conforme au doc validé (THI-128).
+ *
+ * Monté plusieurs fois sur la landing (hero + CTA final) : les ids champ/erreur
+ * sont générés via useId() pour rester uniques dans le DOM (a11y).
  *
  * Périmètre de CETTE issue = l'UI du flux. L'envoi réel du lien (génération de
  * token + e-mail) relève du WS auth/magic-link : on l'appelle via la prop
@@ -12,19 +16,20 @@ import { useLanding } from '~/composables/useLanding'
  * affiche l'écran de confirmation sans prétendre avoir envoyé un e-mail.
  */
 const props = defineProps<{
-  /** Identifiant pour relier le label au champ (a11y). */
-  id?: string
   /** Brancher l'envoi réel du lien ici (WS auth). */
   onSubmit?: (email: string) => Promise<void>
 }>()
 
 const { m } = useLanding()
 
+const uid = useId()
+const fieldId = `${uid}-email`
+const errorId = `${uid}-error`
+
 const email = ref('')
 const status = ref<'idle' | 'pending' | 'sent'>('idle')
 const error = ref<string | null>(null)
 
-const fieldId = computed(() => props.id ?? 'magiclink-email')
 // Validation volontairement permissive (pas de regex exotique qui rejette des
 // e-mails valides) : présence d'un « @ » entouré de caractères, point ensuite.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -49,9 +54,12 @@ async function submit() {
 
 <template>
   <div class="w-full max-w-md">
-    <form v-if="status !== 'sent'" class="flex flex-col gap-3" novalidate @submit.prevent="submit">
+    <form v-if="status !== 'sent'" novalidate @submit.prevent="submit">
       <label :for="fieldId" class="sr-only">{{ m.signup.emailLabel }}</label>
-      <div class="flex flex-col gap-3 sm:flex-row">
+      <div
+        class="flex flex-col gap-2 rounded-control bg-surface p-1.5 shadow-card ring-1 transition-shadow duration-300 ease-out focus-within:ring-2 focus-within:ring-brand-500 sm:flex-row sm:items-center"
+        :class="error ? 'ring-danger-500' : 'ring-border'"
+      >
         <input
           :id="fieldId"
           v-model="email"
@@ -60,18 +68,19 @@ async function submit() {
           autocomplete="email"
           :placeholder="m.signup.emailPlaceholder"
           :aria-invalid="error ? 'true' : undefined"
-          aria-describedby="magiclink-error"
-          class="flex-1 rounded-card border border-ink-500/30 bg-surface px-4 py-3 text-ink-900 shadow-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+          :aria-describedby="error ? errorId : undefined"
+          class="h-10 w-full min-w-0 flex-1 rounded-control bg-transparent px-3 text-sm text-ink-900 placeholder:text-ink-500 focus:outline-none"
         />
-        <button
-          type="submit"
-          :disabled="status === 'pending'"
-          class="rounded-card bg-brand-600 px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:opacity-60"
-        >
+        <UiButton type="submit" :loading="status === 'pending'" class="sm:shrink-0">
           {{ m.signup.submit }}
-        </button>
+        </UiButton>
       </div>
-      <p id="magiclink-error" role="alert" class="min-h-5 text-sm text-danger-500">
+      <p
+        v-if="error"
+        :id="errorId"
+        role="alert"
+        class="mt-2 text-left text-sm font-medium text-danger-600"
+      >
         {{ error }}
       </p>
     </form>
@@ -79,10 +88,17 @@ async function submit() {
     <div
       v-else
       role="status"
-      class="rounded-card border border-success-500/30 bg-success-500/5 px-5 py-4 text-center"
+      class="flex animate-fade-up items-start gap-3 rounded-card bg-success-50 px-5 py-4 text-left ring-1 ring-success-200"
     >
-      <p class="font-semibold text-ink-900">{{ m.signup.sentTitle }}</p>
-      <p class="mt-1 text-sm text-ink-700">{{ m.signup.sentBody }}</p>
+      <MailCheck
+        class="mt-0.5 h-5 w-5 shrink-0 text-success-600"
+        :stroke-width="2"
+        aria-hidden="true"
+      />
+      <div>
+        <p class="font-semibold text-ink-900">{{ m.signup.sentTitle }}</p>
+        <p class="mt-1 text-sm text-ink-700">{{ m.signup.sentBody }}</p>
+      </div>
     </div>
   </div>
 </template>

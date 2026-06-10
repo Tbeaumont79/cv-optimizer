@@ -9,9 +9,9 @@ describe('buttonClasses', () => {
   })
 
   it('maps each variant to its brand-token classes', () => {
-    expect(buttonClasses('secondary')).toContain('ring-border')
+    expect(buttonClasses('secondary')).toContain('ring-border-strong')
     expect(buttonClasses('ghost')).toContain('bg-transparent')
-    expect(buttonClasses('danger')).toContain('bg-danger-500')
+    expect(buttonClasses('danger')).toContain('bg-danger-600')
   })
 
   it('maps each size to its dimensions', () => {
