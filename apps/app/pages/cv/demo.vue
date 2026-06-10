@@ -128,33 +128,40 @@ async function handleExport() {
 
 <template>
   <div class="bg-surface-muted print:bg-white">
-    <!-- Barre d'actions — chrome d'aperçu, masquée à l'impression. -->
+    <!--
+      Aperçu type "feuille + inspecteur" : la feuille A4 occupe l'espace à gauche,
+      le panneau d'actions est au-dessus sur mobile, à droite (sticky) sur desktop.
+    -->
     <div
-      class="mx-auto mb-8 flex w-full max-w-[210mm] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden"
+      class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start lg:justify-center print:block"
     >
-      <div class="min-w-0">
+      <!-- Panneau d'actions — chrome d'aperçu, masqué à l'impression. -->
+      <aside class="w-full shrink-0 lg:sticky lg:top-24 lg:w-72 print:hidden">
         <div class="flex flex-wrap items-center gap-2.5">
           <h1 class="text-2xl font-bold tracking-tight text-ink-900">Aperçu de ton CV</h1>
           <UiBadge variant="brand">Données de démo</UiBadge>
         </div>
-        <p class="mt-1 text-sm text-ink-500">Vérifie le rendu, puis télécharge-le en un clic.</p>
+        <p class="mt-2 text-sm leading-relaxed text-ink-500">
+          Voici à quoi ressemblera un CV généré par Teven. Vérifie le rendu, puis télécharge-le.
+        </p>
+        <UiButton :loading="exporting" class="mt-5 w-full" @click="handleExport">
+          <Download v-if="!exporting" class="h-4 w-4" :stroke-width="2" aria-hidden="true" />
+          Télécharger en PDF
+        </UiButton>
+        <p class="mt-4 text-xs leading-relaxed text-ink-400">
+          Le PDF téléchargé est strictement identique à cet aperçu.
+        </p>
+      </aside>
+
+      <!--
+        Feuille d'aperçu : seul le conteneur est stylé.
+        CvTemplate (.cv-page) reste intouché — parité stricte avec l'export PDF serveur.
+      -->
+      <div
+        class="mx-auto w-full max-w-[210mm] shrink-0 overflow-hidden rounded-card shadow-pop ring-1 ring-border lg:mx-0 print:mx-0 print:max-w-none print:overflow-visible print:rounded-none print:shadow-none print:ring-0"
+      >
+        <CvTemplate :cv="demoCv" />
       </div>
-      <UiButton :loading="exporting" class="shrink-0" @click="handleExport">
-        <Download v-if="!exporting" class="h-4 w-4" :stroke-width="2" aria-hidden="true" />
-        Télécharger en PDF
-      </UiButton>
     </div>
-
-    <!--
-      Feuille d'aperçu : seul le conteneur est stylé.
-      CvTemplate (.cv-page) reste intouché — parité stricte avec l'export PDF serveur.
-    -->
-    <div
-      class="mx-auto max-w-[210mm] overflow-hidden rounded-card shadow-pop ring-1 ring-border print:max-w-none print:overflow-visible print:rounded-none print:shadow-none print:ring-0"
-    >
-      <CvTemplate :cv="demoCv" />
-    </div>
-
-    <p class="mt-5 text-center text-xs text-ink-400 print:hidden">Aperçu fidèle au PDF exporté.</p>
   </div>
 </template>
