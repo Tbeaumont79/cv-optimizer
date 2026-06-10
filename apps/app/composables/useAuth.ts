@@ -10,13 +10,20 @@
 import { createAuthClient } from 'better-auth/client'
 import { magicLinkClient } from 'better-auth/client/plugins'
 
-// Singleton par page (SSR-safe : le composable est appelé côté client uniquement).
+// Singleton par contexte. Le client vanilla better-auth exige une URL ABSOLUE
+// quand on en fournit une (une relative type '/api/auth' est rejetée partout) :
+// - navigateur : on omet baseURL → il prend l'origine courante + '/api/auth'
+//   (chemin par défaut de Better Auth) ;
+// - SSR (le layout lit la session au rendu) : on la construit depuis
+//   runtimeConfig.public.appUrl.
 let _client: ReturnType<typeof createAuthClient> | null = null
 
 function getClient() {
   if (!_client) {
     _client = createAuthClient({
-      baseURL: '/api/auth',
+      ...(import.meta.server
+        ? { baseURL: `${useRuntimeConfig().public.appUrl}/api/auth` }
+        : {}),
       plugins: [magicLinkClient()],
     })
   }

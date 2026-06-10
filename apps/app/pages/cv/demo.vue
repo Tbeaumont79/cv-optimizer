@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import type { RenderableCv, ProfileItemId } from '@cvo/shared'
 import { assertValidCv } from '@cvo/shared'
+import { Download } from '@lucide/vue'
 
 // Données de démo statiques — aucune donnée personnelle réelle.
 // Le moteur (THI-124) remplacera ceci par une vraie génération côté serveur.
 const DEMO_PROFILE_IDS: ProfileItemId[] = [
-  'identity-1', 'summary-1',
-  'exp-1', 'exp-1-b1', 'exp-1-b2',
-  'skill-ts', 'skill-vue', 'edu-1',
+  'identity-1',
+  'summary-1',
+  'exp-1',
+  'exp-1-b1',
+  'exp-1-b2',
+  'skill-ts',
+  'skill-vue',
+  'edu-1',
 ]
 
 const demoCv: RenderableCv = {
@@ -58,8 +64,16 @@ const demoCv: RenderableCv = {
       kind: 'skills',
       title: 'Compétences',
       entries: [
-        { id: 'sk-1', label: 'TypeScript', provenance: { profileItemId: 'skill-ts', reformulated: false } },
-        { id: 'sk-2', label: 'Vue 3', provenance: { profileItemId: 'skill-vue', reformulated: false } },
+        {
+          id: 'sk-1',
+          label: 'TypeScript',
+          provenance: { profileItemId: 'skill-ts', reformulated: false },
+        },
+        {
+          id: 'sk-2',
+          label: 'Vue 3',
+          provenance: { profileItemId: 'skill-vue', reformulated: false },
+        },
       ],
     },
     {
@@ -81,7 +95,8 @@ const demoCv: RenderableCv = {
 // Défense en profondeur : garde-fou provenance avant tout rendu.
 assertValidCv(demoCv, DEMO_PROFILE_IDS)
 
-// Export PDF : câblé sur /api/cv/export-pdf (PR 3, THI-125).
+// Export PDF via /api/cv/export-pdf (THI-125).
+const toast = useToast()
 const exporting = ref(false)
 
 async function handleExport() {
@@ -100,8 +115,11 @@ async function handleExport() {
     a.click()
     URL.revokeObjectURL(url)
   } catch (err) {
-    // Route export non encore déployée (PR 3) — erreur attendue en démo.
-    console.error('[cv/demo] export-pdf non disponible (PR 3):', err)
+    console.error('[cv/demo] export-pdf en échec:', err)
+    toast.error(
+      'Export impossible',
+      "Le PDF n'a pas pu être généré. Réessaie dans quelques instants.",
+    )
   } finally {
     exporting.value = false
   }
@@ -109,23 +127,34 @@ async function handleExport() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface-muted py-10 print:bg-white print:py-0">
-    <!-- Barre d'actions — masquée à l'impression -->
-    <div class="mx-auto mb-6 flex w-full max-w-[210mm] items-center justify-between px-2 print:hidden">
-      <p class="text-sm text-ink-500">
-        Aperçu CV — <span class="font-medium text-ink-700">données de démo</span>
-      </p>
-      <button
-        type="button"
-        :disabled="exporting"
-        class="rounded-card bg-brand-600 px-4 py-2 text-sm font-medium text-brand-50 hover:bg-brand-700 disabled:opacity-60"
-        @click="handleExport"
-      >
-        {{ exporting ? 'Export en cours…' : 'Télécharger PDF' }}
-      </button>
+  <div class="bg-surface-muted print:bg-white">
+    <!-- Barre d'actions — chrome d'aperçu, masquée à l'impression. -->
+    <div
+      class="mx-auto mb-8 flex w-full max-w-[210mm] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden"
+    >
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <h1 class="text-2xl font-bold tracking-tight text-ink-900">Aperçu de ton CV</h1>
+          <UiBadge variant="brand">Données de démo</UiBadge>
+        </div>
+        <p class="mt-1 text-sm text-ink-500">Vérifie le rendu, puis télécharge-le en un clic.</p>
+      </div>
+      <UiButton :loading="exporting" class="shrink-0" @click="handleExport">
+        <Download v-if="!exporting" class="h-4 w-4" :stroke-width="2" aria-hidden="true" />
+        Télécharger en PDF
+      </UiButton>
     </div>
 
-    <!-- Rendu du CV (composant déterministe) -->
-    <CvTemplate :cv="demoCv" />
+    <!--
+      Feuille d'aperçu : seul le conteneur est stylé.
+      CvTemplate (.cv-page) reste intouché — parité stricte avec l'export PDF serveur.
+    -->
+    <div
+      class="mx-auto max-w-[210mm] overflow-hidden rounded-card shadow-pop ring-1 ring-border print:max-w-none print:overflow-visible print:rounded-none print:shadow-none print:ring-0"
+    >
+      <CvTemplate :cv="demoCv" />
+    </div>
+
+    <p class="mt-5 text-center text-xs text-ink-400 print:hidden">Aperçu fidèle au PDF exporté.</p>
   </div>
 </template>

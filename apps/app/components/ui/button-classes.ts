@@ -7,15 +7,16 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-control font-medium transition-colors ' +
+  'inline-flex items-center justify-center gap-2 rounded-control font-semibold transition-all duration-200 ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ' +
-  'disabled:cursor-not-allowed disabled:opacity-50'
+  'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100'
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-600 text-brand-50 hover:bg-brand-700',
-  secondary: 'bg-surface text-ink-900 ring-1 ring-border hover:bg-surface-muted',
-  ghost: 'bg-transparent text-ink-700 hover:bg-surface-muted',
-  danger: 'bg-danger-500 text-surface hover:bg-danger-500/90',
+  primary: 'bg-brand-600 text-white shadow-brand hover:bg-brand-700 hover:shadow-card-hover',
+  secondary:
+    'bg-surface text-ink-800 shadow-xs ring-1 ring-border-strong hover:bg-surface-muted hover:ring-ink-400',
+  ghost: 'bg-transparent text-ink-600 hover:bg-surface-warm hover:text-ink-800',
+  danger: 'bg-danger-600 text-white shadow-xs hover:bg-danger-700',
 }
 
 const SIZES: Record<ButtonSize, string> = {

@@ -4,47 +4,139 @@
  * Design tokens — source unique de vérité (Tailwind v4 @theme).
  * Règle d'équipe : AUCUNE valeur en dur dans les composants.
  * On consomme ces tokens via les classes générées : bg-brand-600, text-ink-700,
- * rounded-card, font-sans, etc. Le design system détaillé viendra avec l'UX/UI.
+ * rounded-card, font-sans, shadow-card, etc.
+ *
+ * Direction "Chaleur professionnelle" (réfs Resume.io/Teal/Notion) :
+ * neutres chauds (stone), accent indigo profond, radius généreux, ombres douces.
+ *
+ * Exceptions admises à la règle tokens-only (décision revue 2026-06) :
+ * - `white`/`black` Tailwind : constantes universelles, autorisées sur fonds
+ *   sombres ou brand (text-white sur bg-brand-600, etc.).
+ * - Modificateurs d'opacité `/N` sur tokens (bg-brand-100/60…) : mécanisme
+ *   standard Tailwind v4 (color-mix), pas une valeur en dur.
+ * - Valeurs arbitraires ([…]) uniquement quand intrinsèques au composant
+ *   (ex. tailles texte du mini-mockup CvMockup) — jamais pour contourner
+ *   un token existant.
  */
 @theme {
-  /* Couleur de marque (placeholder neutre tant que le branding n'est pas tranché —
-     le naming/branding final viendra du CMO via THI-121 → ajuster ici uniquement). */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
+  /* Marque — indigo profond (crédibilité) */
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+  --color-brand-950: #1e1b4b;
 
-  /* Texte & neutres */
-  --color-ink-100: #f3f4f6;
-  --color-ink-300: #d1d5db;
-  --color-ink-500: #6b7280;
-  --color-ink-700: #374151;
-  --color-ink-900: #111827;
+  /* Texte & neutres — stone (chaleur) */
+  --color-ink-50: #fafaf9;
+  --color-ink-100: #f5f5f4;
+  --color-ink-200: #e7e5e4;
+  --color-ink-300: #d6d3d1;
+  --color-ink-400: #a8a29e;
+  --color-ink-500: #78716c;
+  --color-ink-600: #57534e;
+  --color-ink-700: #44403c;
+  --color-ink-800: #292524;
+  --color-ink-900: #1c1917;
+  --color-ink-950: #0c0a09;
 
-  /* États sémantiques */
-  --color-success-500: #16a34a;
-  --color-warning-500: #d97706;
-  --color-danger-500: #dc2626;
+  /* États sémantiques — échelles fond (50/100), bordure (200), texte/action (600/700) */
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
 
   /* Surfaces & bordures */
   --color-surface: #ffffff;
-  --color-surface-muted: #f9fafb;
-  --color-border: #e5e7eb;
+  --color-surface-muted: #fafaf9;
+  --color-surface-warm: #f5f5f4;
+  --color-border: #e7e5e4;
+  --color-border-strong: #d6d3d1;
 
-  /* Typographie */
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Typographie — chargée réellement via @nuxt/fonts (nuxt.config.ts) */
+  --font-sans:
+    'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  /* Rayons nommés */
-  --radius-card: 0.75rem;
-  --radius-control: 0.5rem;
+  /* Rayons nommés — généreux (direction chaleur pro) */
+  --radius-card: 1rem;
+  --radius-control: 0.625rem;
+
+  /* Ombres multi-couches très douces (style Stripe), teinte stone */
+  --shadow-xs: 0 1px 2px 0 rgb(28 25 23 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(28 25 23 / 0.04), 0 1px 3px 0 rgb(28 25 23 / 0.06);
+  --shadow-card: 0 1px 2px 0 rgb(28 25 23 / 0.04), 0 2px 8px -2px rgb(28 25 23 / 0.08);
+  --shadow-card-hover:
+    0 2px 4px -1px rgb(28 25 23 / 0.06), 0 8px 24px -4px rgb(28 25 23 / 0.12);
+  --shadow-pop:
+    0 4px 8px -2px rgb(28 25 23 / 0.08), 0 16px 40px -8px rgb(28 25 23 / 0.16);
+  --shadow-brand: 0 1px 2px 0 rgb(67 56 202 / 0.12), 0 4px 12px -2px rgb(79 70 229 / 0.25);
+
+  /* Animations utilitaires (toasts, entrées de sections) */
+  --animate-toast-in: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 html,
 body,
 #__nuxt {
   height: 100%;
+}
+
+body {
+  @apply bg-surface text-ink-800 antialiased;
+}
+
+/* Respecte la préférence utilisateur de mouvement réduit. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ─── Print / PDF (cible : Chromium headless, PR 3) ─────────────────────────

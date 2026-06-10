@@ -1,4 +1,8 @@
 <script setup lang="ts">
+// Les attributs natifs non déclarés (maxlength, autocomplete…) doivent
+// atterrir sur le <textarea>, pas sur le wrapper UiFormField.
+defineOptions({ inheritAttrs: false })
+
 const props = withDefaults(
   defineProps<{
     label?: string
@@ -20,6 +24,7 @@ const { id, describedBy } = useField(props)
   <UiFormField :field-id="id" :label="label" :hint="hint" :error="error" :required="required">
     <textarea
       :id="id"
+      v-bind="$attrs"
       v-model="model"
       :rows="rows"
       :placeholder="placeholder"

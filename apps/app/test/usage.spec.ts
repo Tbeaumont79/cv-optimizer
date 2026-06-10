@@ -81,6 +81,6 @@ describe('buildUsageSummary', () => {
     expect(summary.counter.generation).toBe(5)
     expect(summary.quotas.map((q) => q.type)).toEqual(['generation', 'export_pdf', 'extraction'])
     const gen = summary.quotas.find((q) => q.type === 'generation')!
-    expect(gen.exceeded).toBe(true) // 5/5 atteint
+    expect(gen.exceeded).toBe(true) // 5 utilisées ≥ quota gratuit (2)
   })
 })

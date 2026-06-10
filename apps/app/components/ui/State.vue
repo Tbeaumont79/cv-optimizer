@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // État transversal d'une zone de contenu : chargement, erreur ou vide.
 // Le slot par défaut accueille une action (ex. bouton « Réessayer »).
+import { CircleAlert, Inbox } from '@lucide/vue'
+
 withDefaults(
   defineProps<{
     variant?: 'loading' | 'error' | 'empty'
@@ -19,13 +21,14 @@ withDefaults(
     <UiSpinner v-if="variant === 'loading'" class="h-8 w-8 text-brand-600" />
     <div
       v-else
-      class="flex h-12 w-12 items-center justify-center rounded-full text-xl font-semibold"
-      :class="variant === 'error' ? 'bg-danger-500/10 text-danger-500' : 'bg-ink-100 text-ink-500'"
+      class="flex h-12 w-12 items-center justify-center rounded-full"
+      :class="variant === 'error' ? 'bg-danger-50 text-danger-600' : 'bg-ink-100 text-ink-400'"
       aria-hidden="true"
     >
-      {{ variant === 'error' ? '!' : '∅' }}
+      <CircleAlert v-if="variant === 'error'" class="h-6 w-6" :stroke-width="1.75" />
+      <Inbox v-else class="h-6 w-6" :stroke-width="1.75" />
     </div>
-    <p v-if="title" class="font-medium text-ink-900">{{ title }}</p>
+    <p v-if="title" class="font-semibold text-ink-900">{{ title }}</p>
     <p v-if="description" class="max-w-sm text-sm text-ink-500">{{ description }}</p>
     <slot />
   </div>

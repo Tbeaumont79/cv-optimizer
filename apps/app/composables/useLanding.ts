@@ -1,15 +1,17 @@
 import { fr, type LandingMessages } from '~/i18n/fr'
 import { BRAND } from '~/config/brand'
-import { PLANS } from '~/config/pricing'
+import { CREDIT_PACKS, FREE_GENERATIONS } from '~/config/pricing'
 
 /**
- * Remplace récursivement le placeholder `{brand}` par la constante BRAND dans
- * toute la copy. Tient lieu d'interpolation i18n minimale en attendant le
+ * Remplace récursivement les placeholders `{brand}` et `{freeGenerations}`
+ * dans toute la copy. Tient lieu d'interpolation i18n minimale en attendant le
  * module dédié (le contrat de clés reste identique).
  */
 function interpolate<T>(value: T): T {
   if (typeof value === 'string') {
-    return value.replace(/\{brand\}/g, BRAND) as T
+    return value
+      .replace(/\{brand\}/g, BRAND)
+      .replace(/\{freeGenerations\}/g, String(FREE_GENERATIONS)) as T
   }
   if (Array.isArray(value)) {
     return value.map((item) => interpolate(item)) as T
@@ -38,5 +40,11 @@ export function useLanding() {
     })),
   })
 
-  return { m, brand: BRAND, plans: PLANS, faqJsonLd }
+  return {
+    m,
+    brand: BRAND,
+    packs: CREDIT_PACKS,
+    freeGenerations: FREE_GENERATIONS,
+    faqJsonLd,
+  }
 }

@@ -4,7 +4,7 @@ defineProps<{ title?: string }>()
 </script>
 
 <template>
-  <section class="rounded-card bg-surface p-6 shadow-sm ring-1 ring-border">
+  <section class="rounded-card bg-surface p-6 shadow-card ring-1 ring-border">
     <header v-if="title || $slots.header" class="mb-4">
       <slot name="header">
         <h2 class="text-lg font-semibold text-ink-900">{{ title }}</h2>

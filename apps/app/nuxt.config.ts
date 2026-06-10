@@ -6,6 +6,13 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
   devtools: { enabled: true },
 
+  // Chargement réel des fontes (self-hosted au build — pas de requête Google au runtime).
+  // La famille est consommée via le token --font-sans (assets/css/main.css).
+  modules: ['@nuxt/fonts'],
+  fonts: {
+    families: [{ name: 'Plus Jakarta Sans', provider: 'google', weights: [400, 500, 600, 700, 800] }],
+  },
+
   // TS strict des deux côtés (front Vue + serveur Nitro).
   typescript: {
     strict: true,
@@ -20,6 +27,7 @@ export default defineNuxtConfig({
       // Titre global de repli = nom de marque. La landing surcharge avec un
       // <title> SEO dédié ; le nom vient du token BRAND (config/brand.ts).
       title: 'Teven',
+      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     },
   },
 
