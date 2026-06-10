@@ -127,13 +127,14 @@ async function handleExport() {
 </script>
 
 <template>
+  <!-- Fond atelier bord à bord ; le contenu garde sa largeur de lecture. -->
   <div class="bg-surface-muted print:bg-white">
     <!--
       Aperçu type "feuille + inspecteur" : la feuille A4 occupe l'espace à gauche,
       le panneau d'actions est au-dessus sur mobile, à droite (sticky) sur desktop.
     -->
     <div
-      class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start lg:justify-center print:block"
+      class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 lg:flex-row-reverse lg:items-start lg:justify-center print:block print:max-w-none print:p-0"
     >
       <!-- Panneau d'actions — chrome d'aperçu, masqué à l'impression. -->
       <aside class="w-full shrink-0 lg:sticky lg:top-24 lg:w-72 print:hidden">

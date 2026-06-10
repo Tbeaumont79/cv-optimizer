@@ -281,7 +281,7 @@ async function applyImport() {
 </script>
 
 <template>
-  <div class="w-full">
+  <div class="mx-auto w-full max-w-6xl px-6 py-10">
     <!-- ── En-tête de page ── -->
     <header>
       <h1 class="text-2xl font-bold tracking-tight text-ink-900 sm:text-3xl">Mon profil</h1>

@@ -144,7 +144,7 @@ const SEMANTIC_SCALES = [
 </script>
 
 <template>
-  <div>
+  <div class="mx-auto w-full max-w-6xl px-6 py-10">
     <header class="mb-8">
       <h1 class="text-2xl font-bold tracking-tight text-ink-900">Design system</h1>
       <p class="mt-1 text-ink-500">

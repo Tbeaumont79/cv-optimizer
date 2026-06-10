@@ -71,7 +71,8 @@ function toggleFaq(index: number) {
 </script>
 
 <template>
-  <main id="top" class="min-h-full bg-surface text-ink-900">
+  <!-- div (pas <main>) : le layout fournit déjà le <main> englobant. -->
+  <div id="top" class="min-h-full bg-surface text-ink-900">
     <!-- Le header global (nav + connexion) vient du layout par défaut. -->
 
     <!-- Hero -->
@@ -81,7 +82,7 @@ function toggleFaq(index: number) {
         aria-hidden="true"
       ></div>
       <div
-        class="mx-auto grid max-w-6xl items-center gap-14 px-6 pb-24 pt-12 lg:grid-cols-2 lg:gap-16 lg:pb-28 lg:pt-20"
+        class="mx-auto grid max-w-7xl items-center gap-14 px-6 pb-24 pt-16 lg:grid-cols-2 lg:gap-20 lg:pb-32 lg:pt-24"
       >
         <div class="relative">
           <p class="text-xs font-semibold uppercase tracking-widest text-brand-600">
@@ -119,7 +120,7 @@ function toggleFaq(index: number) {
 
     <!-- Comment ça marche -->
     <section class="px-6 py-20 sm:py-24">
-      <div class="mx-auto max-w-6xl">
+      <div class="mx-auto max-w-7xl">
         <div class="mx-auto max-w-2xl text-center">
           <p class="text-xs font-semibold uppercase tracking-widest text-brand-600">
             {{ m.how.eyebrow }}
@@ -156,7 +157,7 @@ function toggleFaq(index: number) {
 
     <!-- Garde-fou (différenciateur cœur) -->
     <section class="bg-ink-900 px-6 py-20 text-white sm:py-24">
-      <div class="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
+      <div class="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <div>
           <span
             class="inline-flex h-12 w-12 items-center justify-center rounded-control bg-white/10"
@@ -193,7 +194,7 @@ function toggleFaq(index: number) {
 
     <!-- Pour qui -->
     <section class="px-6 py-20 sm:py-24">
-      <div class="mx-auto max-w-6xl">
+      <div class="mx-auto max-w-7xl">
         <div class="mx-auto max-w-2xl text-center">
           <p class="text-xs font-semibold uppercase tracking-widest text-brand-600">
             {{ m.audience.eyebrow }}
@@ -225,7 +226,7 @@ function toggleFaq(index: number) {
 
     <!-- Pricing : crédits one-shot, pas d'abonnement -->
     <section id="tarifs" class="bg-surface-muted px-6 py-20 sm:py-24">
-      <div class="mx-auto max-w-6xl">
+      <div class="mx-auto max-w-7xl">
         <div class="mx-auto max-w-2xl text-center">
           <p class="text-xs font-semibold uppercase tracking-widest text-brand-600">
             {{ m.pricing.eyebrow }}
@@ -234,7 +235,7 @@ function toggleFaq(index: number) {
           <p class="mt-6 leading-relaxed text-ink-600">{{ m.pricing.intro }}</p>
         </div>
 
-        <div class="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-3">
+        <div class="mx-auto mt-14 grid max-w-6xl gap-6 md:grid-cols-3">
           <!-- Carte « Gratuit » (2 générations offertes à l'inscription) -->
           <article class="flex flex-col rounded-card bg-surface p-7 shadow-xs ring-1 ring-border">
             <h3 class="text-lg font-semibold text-ink-900">{{ m.pricing.free.name }}</h3>
@@ -382,24 +383,6 @@ function toggleFaq(index: number) {
         <p class="mt-4 text-sm text-white/80">{{ m.finalCta.trust }}</p>
       </div>
     </section>
-
-    <!-- Footer -->
-    <footer class="border-t border-border bg-surface px-6 py-10">
-      <div
-        class="mx-auto flex max-w-6xl flex-col items-center gap-4 sm:flex-row sm:justify-between"
-      >
-        <nav class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-ink-600">
-          <a
-            v-for="(l, i) in m.footer.links"
-            :key="i"
-            :href="l.href"
-            class="transition-colors duration-300 ease-out hover:text-brand-600"
-          >
-            {{ l.label }}
-          </a>
-        </nav>
-        <p class="text-sm text-ink-500">{{ m.footer.copyright }}</p>
-      </div>
-    </footer>
-  </main>
+    <!-- Le footer global vient du layout par défaut (plus de footer dupliqué ici). -->
+  </div>
 </template>

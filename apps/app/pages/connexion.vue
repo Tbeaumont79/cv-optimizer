@@ -10,6 +10,10 @@ const toast = useToast()
 const email = ref('')
 const sent = ref(false)
 
+// En dev sans SMTP, l'email n'est jamais envoyé : le lien magique est loggé
+// dans le terminal du serveur. On l'affiche pour ne pas chercher en vain.
+const isDev = import.meta.dev
+
 async function handleSubmit() {
   if (!email.value) return
   const ok = await signIn(email.value)
@@ -87,6 +91,15 @@ function changeEmail() {
             >. Clique dessus pour continuer — il est valable 10 minutes.
           </p>
         </div>
+
+        <p
+          v-if="isDev"
+          class="rounded-control bg-warning-50 px-3 py-2 text-left text-xs leading-relaxed text-warning-700 ring-1 ring-warning-200"
+        >
+          Mode dev sans SMTP : aucun email n'est réellement envoyé. Le lien de connexion est affiché
+          dans le <strong>terminal du serveur</strong> (<code>[DEV] Magic-link…</code>) — copie-le
+          dans le navigateur.
+        </p>
 
         <div class="flex flex-col items-center gap-2">
           <UiButton variant="ghost" size="sm" :loading="pending" @click="handleResend">

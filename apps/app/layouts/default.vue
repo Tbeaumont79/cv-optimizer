@@ -188,7 +188,12 @@ const year = new Date().getFullYear()
       </div>
     </header>
 
-    <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+    <!--
+      Pas de conteneur ici : chaque page gère sa largeur. La landing pose des
+      sections full-bleed (fonds bord à bord) ; les pages app se wrappent dans
+      mx-auto max-w-6xl px-6 py-10.
+    -->
+    <main class="flex-1">
       <slot />
     </main>
 
