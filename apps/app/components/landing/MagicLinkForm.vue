@@ -10,15 +10,15 @@ import { useLanding } from '~/composables/useLanding'
  * Monté plusieurs fois sur la landing (hero + CTA final) : les ids champ/erreur
  * sont générés via useId() pour rester uniques dans le DOM (a11y).
  *
- * Périmètre de CETTE issue = l'UI du flux. L'envoi réel du lien (génération de
- * token + e-mail) relève du WS auth/magic-link : on l'appelle via la prop
- * `onSubmit`, à brancher sur l'endpoint quand il existera. Par défaut le flux
- * affiche l'écran de confirmation sans prétendre avoir envoyé un e-mail.
+ * L'envoi réel passe par useAuth().signIn (Better Auth magic-link). La prop
+ * `onSubmit` reste disponible pour surcharger le comportement (tests, variantes).
  */
 const props = defineProps<{
-  /** Brancher l'envoi réel du lien ici (WS auth). */
+  /** Surcharge de l'envoi (défaut : useAuth().signIn). */
   onSubmit?: (email: string) => Promise<void>
 }>()
+
+const { signIn } = useAuth()
 
 const { m } = useLanding()
 
@@ -43,7 +43,12 @@ async function submit() {
   }
   status.value = 'pending'
   try {
-    await props.onSubmit?.(value)
+    if (props.onSubmit) {
+      await props.onSubmit(value)
+    } else {
+      const ok = await signIn(value)
+      if (!ok) throw new Error('signIn failed')
+    }
     status.value = 'sent'
   } catch {
     status.value = 'idle'
