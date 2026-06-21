@@ -3,8 +3,8 @@ import type {
   AnalyzeCandidatureRequest,
   AnalyzeCandidatureResponse,
   GenerateCandidatureRequest,
+  GenerateCandidatureResponse,
   ProfileDTO,
-  RenderableCv,
   UsageSummary,
 } from '@cvo/shared'
 import {
@@ -15,7 +15,7 @@ import {
   matchVerdict,
 } from '@cvo/shared'
 import type { MatchVerdict } from '@cvo/shared'
-import { ChevronRight, Download, RotateCcw, ShieldCheck, TriangleAlert } from '@lucide/vue'
+import { ChevronRight, TriangleAlert } from '@lucide/vue'
 
 definePageMeta({ middleware: 'auth' })
 
@@ -23,13 +23,14 @@ const toast = useToast()
 
 // ─── Machine à états du parcours ─────────────────────────────────────────────
 
-type Step = 'input' | 'analyzing' | 'scored' | 'generating' | 'done'
+// Le parcours s'arrête à `generating` : au succès on redirige vers l'éditeur
+// (/candidatures/:id) — le CV est persisté, donc plus de perte au changement d'onglet.
+type Step = 'input' | 'analyzing' | 'scored' | 'generating'
 const step = ref<Step>('input')
 
 const offerText = ref('')
 const offerError = ref('')
 const analysis = ref<AnalyzeCandidatureResponse | null>(null)
-const generatedCv = ref<RenderableCv | null>(null)
 
 // ─── Quota de générations (badge + gating des boutons) ───────────────────────
 
@@ -149,15 +150,18 @@ async function generate() {
   if (!analysis.value || quotaExhausted.value || step.value === 'generating') return
   step.value = 'generating'
   try {
-    const body: GenerateCandidatureRequest = { offer: analysis.value.offer }
-    const res = await $fetch<{ cv: RenderableCv }>(CANDIDATURE_GENERATE_PATH, {
+    const body: GenerateCandidatureRequest = {
+      offer: analysis.value.offer,
+      match: analysis.value.match,
+    }
+    const res = await $fetch<GenerateCandidatureResponse>(CANDIDATURE_GENERATE_PATH, {
       method: 'POST',
       body,
     })
-    generatedCv.value = res.cv
-    step.value = 'done'
-    toast.success('CV généré', "Ton CV adapté à l'offre est prêt.")
     await refreshUsage()
+    toast.success('CV généré', 'Ton CV est prêt — tu peux le personnaliser.')
+    // Persisté en base : on ouvre l'éditeur (le CV survit aux changements d'onglet).
+    await navigateTo(`/candidatures/${res.candidatureId}`)
   } catch (err) {
     step.value = 'scored'
     const status = errorStatus(err)
@@ -167,66 +171,29 @@ async function generate() {
       toast.error('Quota atteint', 'Tu as épuisé tes générations offertes.')
     } else if (status === 422) {
       toast.error('Génération impossible', errorMessage(err, 'Réessaie dans quelques instants.'))
+    } else if (status === 409) {
+      // Profil incomplet (vide ou nom manquant) : on relaie le message serveur,
+      // qui guide vers la page profil. Aucun crédit consommé.
+      toast.error('Profil à compléter', errorMessage(err, 'Complète ton profil puis réessaie.'))
     } else {
       toast.error('La génération a échoué', "Ton crédit n'a pas été consommé.")
     }
   }
 }
 
-// ─── Étape 3 : export PDF + nouvelle candidature ─────────────────────────────
-
-const exporting = ref(false)
-
-async function exportPdf() {
-  if (!generatedCv.value) return
-  exporting.value = true
-  try {
-    const res = await $fetch<ArrayBuffer>('/api/cv/export-pdf', {
-      method: 'POST',
-      body: generatedCv.value,
-      responseType: 'arrayBuffer',
-    })
-    const blob = new Blob([res], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'cv-teven.pdf'
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch {
-    toast.error(
-      'Export impossible',
-      "Le PDF n'a pas pu être généré. Réessaie dans quelques instants.",
-    )
-  } finally {
-    exporting.value = false
-  }
-}
-
-async function resetFlow() {
-  offerText.value = ''
-  offerError.value = ''
-  analysis.value = null
-  generatedCv.value = null
-  step.value = 'input'
-  await refreshUsage()
-}
-
-// ─── A11y : focus déplacé sur le titre du résultat à chaque étape clé ────────
+// ─── A11y : focus déplacé sur le titre du résultat à l'étape « scored » ──────
 
 const scoredHeadingRef = ref<HTMLHeadingElement | null>(null)
-const doneHeadingRef = ref<HTMLHeadingElement | null>(null)
 
 watch(step, async (s) => {
-  if (s !== 'scored' && s !== 'done') return
+  if (s !== 'scored') return
   await nextTick()
-  const target = s === 'scored' ? scoredHeadingRef.value : doneHeadingRef.value
-  target?.focus()
+  scoredHeadingRef.value?.focus()
 })
 </script>
 
 <template>
-  <div class="w-full">
+  <div class="mx-auto w-full max-w-6xl px-6 py-10">
     <!-- ── En-tête de page ── -->
     <header class="flex flex-wrap items-start justify-between gap-4">
       <div>
@@ -428,45 +395,6 @@ watch(step, async (s) => {
             </div>
           </div>
         </UiCard>
-
-        <!-- Étape done : aperçu du CV généré + export -->
-        <div v-else-if="step === 'done' && generatedCv" class="animate-fade-up space-y-5">
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <h2
-              ref="doneHeadingRef"
-              tabindex="-1"
-              class="text-lg font-semibold text-ink-900 outline-none"
-            >
-              Ton CV adapté est prêt
-            </h2>
-            <div class="flex flex-wrap items-center gap-3">
-              <UiButton variant="secondary" @click="resetFlow">
-                <RotateCcw class="h-4 w-4" :stroke-width="2" aria-hidden="true" />
-                Nouvelle candidature
-              </UiButton>
-              <UiButton :loading="exporting" @click="exportPdf">
-                <Download v-if="!exporting" class="h-4 w-4" :stroke-width="2" aria-hidden="true" />
-                Télécharger en PDF
-              </UiButton>
-            </div>
-          </div>
-
-          <p class="flex items-center gap-1.5 text-xs text-ink-500">
-            <ShieldCheck
-              class="h-4 w-4 shrink-0 text-brand-600"
-              :stroke-width="1.75"
-              aria-hidden="true"
-            />
-            Contenu issu de ton profil uniquement — garde-fou anti-invention appliqué.
-          </p>
-
-          <!-- Feuille d'aperçu — fond blanc volontaire : parité avec le PDF exporté -->
-          <div
-            class="mx-auto w-full max-w-[210mm] overflow-hidden rounded-card bg-white shadow-pop ring-1 ring-border"
-          >
-            <CvTemplate :cv="generatedCv" />
-          </div>
-        </div>
       </div>
     </div>
   </div>

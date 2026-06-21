@@ -59,6 +59,17 @@ enum SkillLevel {
   EXPERT
 }
 
+// Niveau de maîtrise d'une langue — cadre européen (CEFR) + langue maternelle.
+enum LanguageLevel {
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+  NATIVE
+}
+
 // Compte utilisateur — ancre d'authentification (le WS Auth y greffera Better
 // Auth + ses tables satellites). Données auth hébergées en FR/UE (RGPD).
 model User {
@@ -85,8 +96,19 @@ model Profile {
   id        String    @id @default(uuid())
   userId    String    @unique
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Identité affichée en tête de CV — FACTUELLE, jamais reformulée par le moteur
+  // (cf. @cvo/shared cv.ts). Injectée déterministe-ment dans le header généré.
+  fullName  String? // nom complet du candidat (ex. « Camille Martin »)
+  email     String? // email de contact affiché (défaut : email du compte)
+  phone     String? // téléphone de contact
+  location  String? // localisation (ex. « Paris, France »)
+  links     String[] // liens (portfolio, LinkedIn, GitHub…)
+  keySkills String[] // compétences clés : phrases (verbe d'action), section au-dessus des expériences
   headline  String? // intitulé court (ex. « Développeur Full-Stack »)
   summary   String? // résumé / accroche
+  // Thème « CV de base » capturé depuis un PDF (style uniquement, jamais de
+  // contenu) : { css, googleFont, summary }. Le PDF source n'est JAMAIS stocké.
+  baseCvDesign Json?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -94,6 +116,7 @@ model Profile {
   experiences Experience[]
   skills      Skill[]
   education   Education[]
+  languages   Language[]
 
   @@index([deletedAt])
   @@map("profiles")
@@ -138,6 +161,23 @@ model Skill {
   @@map("skills")
 }
 
+// Langue déclarée par le candidat (n par profil).
+model Language {
+  id         String         @id @default(uuid())
+  profileId  String
+  profile    Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  label      String // libellé libre (ex. « Français », « Anglais »)
+  level      LanguageLevel?
+  orderIndex Int            @default(0)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  deletedAt  DateTime?
+
+  @@index([profileId])
+  @@index([deletedAt])
+  @@map("languages")
+}
+
 // Formation / diplôme (n par profil).
 model Education {
   id          String    @id @default(uuid())
@@ -156,6 +196,41 @@ model Education {
   @@index([profileId])
   @@index([deletedAt])
   @@map("education")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Candidature — une candidature persistée = offre analysée + CV généré (éditable)
+// + suivi. Rend le CV durable (plus de perte au changement d'onglet) et alimente
+// la liste de suivi. `userId` opaque (même pattern que UsageEvent, pas de FK).
+// Json : offre/CV/design (jamais loggés ; RGPD = données du candidat, pas de tiers).
+// ─────────────────────────────────────────────────────────────────────────────
+enum CandidatureStatus {
+  DRAFT // brouillon
+  SUBMITTED // postulé
+  INTERVIEW // entretien
+  REJECTED // refusé
+  ACCEPTED // accepté
+
+  @@map("candidature_status")
+}
+
+model Candidature {
+  id            String            @id @default(uuid())
+  userId        String
+  label         String // titre dénormalisé pour la liste (= offre.title à la création)
+  status        CandidatureStatus @default(DRAFT)
+  offerSnapshot Json // AnalyzedOffer figée
+  matchScore    Int // dénormalisé depuis MatchReport.score (tri/badge)
+  matchReport   Json // MatchReport complet
+  generatedCv   Json // RenderableCv — copie de travail éditable
+  design        Json? // CvDesign par-candidature (null = fallback profil/défaut)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+
+  @@index([userId, deletedAt])
+  @@index([deletedAt])
+  @@map("candidatures")
 }
 
 // Metering — usage_events + usage_counters (THI-120 §2 · THI-126)

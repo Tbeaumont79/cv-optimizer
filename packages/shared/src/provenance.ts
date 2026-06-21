@@ -13,7 +13,7 @@
  *    en profondeur, même si la sortie a déjà été contrôlée en amont).
  */
 
-import type { ProfileItemId, Provenance, RenderableCv } from './cv'
+import type { ProfileItemId, Provenance, RenderableCv } from './cv.js'
 
 /** Raison du rejet d'un élément. */
 export type ProvenanceViolationReason =
@@ -96,8 +96,10 @@ export function checkProvenance(
           )
         })
         break
+      case 'keyskills':
       case 'skills':
       case 'education':
+      case 'languages':
         section.entries?.forEach((entry, e) =>
           checkNode(entry.provenance, `${base}.entries[${e}]`, validIds, violations),
         )

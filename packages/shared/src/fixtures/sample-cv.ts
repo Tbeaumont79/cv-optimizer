@@ -5,7 +5,7 @@
  * Exerce les 4 types de sections + les puces imbriquées. La fixture de démo
  * riche (pagination multi-pages) viendra avec le template (THI-125).
  */
-import type { RenderableCv, ProfileItemId } from '../cv'
+import type { RenderableCv, ProfileItemId } from '../cv.js'
 
 /** Ids des éléments réels du profil exemple (équivalent d'un profile_snapshot). */
 export const SAMPLE_PROFILE_ITEM_IDS: readonly ProfileItemId[] = [

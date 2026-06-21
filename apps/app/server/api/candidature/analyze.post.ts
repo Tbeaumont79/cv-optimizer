@@ -44,6 +44,7 @@ export default defineEventHandler(async (event): Promise<AnalyzeCandidatureRespo
       experiences: { orderBy: { orderIndex: 'asc' } },
       skills: { orderBy: { orderIndex: 'asc' } },
       education: { orderBy: { orderIndex: 'asc' } },
+      languages: { orderBy: { orderIndex: 'asc' } },
     },
   })
   const profile = profileRow ? toProfileDTO(profileRow) : null

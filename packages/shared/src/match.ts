@@ -9,8 +9,8 @@
  * CODE (déterministe, normalisation accents/casse) — le LLM ne fournit que le
  * score et ses raisons, bornés et revalidés ici.
  */
-import type { AnalyzedOffer } from './offer'
-import type { ProfileDTO } from './profile'
+import type { AnalyzedOffer } from './offer.js'
+import type { ProfileDTO } from './profile.js'
 
 /** Rapport de match affiché à l'utilisateur avant génération. */
 export interface MatchReport {
@@ -121,14 +121,20 @@ export interface AnalyzeCandidatureResponse {
   match: MatchReport
 }
 
-/** POST /api/candidature/generate — corps (l'offre analysée est renvoyée telle quelle). */
+/**
+ * POST /api/candidature/generate — corps. On renvoie l'offre analysée ET le
+ * rapport de match (déjà calculé à l'étape /analyze) pour les persister avec la
+ * candidature, sans recalcul LLM côté serveur.
+ */
 export interface GenerateCandidatureRequest {
   offer: AnalyzedOffer
+  match: MatchReport
 }
 
-/** POST /api/candidature/generate — réponse. */
+/** POST /api/candidature/generate — réponse : le CV + l'id de candidature créée. */
 export interface GenerateCandidatureResponse {
   cv: import('./cv').RenderableCv
+  candidatureId: string
 }
 
 /** Code d'erreur renvoyé (HTTP 403) quand le quota de générations est épuisé. */

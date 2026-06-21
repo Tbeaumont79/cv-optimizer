@@ -46,6 +46,14 @@ describe('clampScore — bornage du score LLM', () => {
 /** Profil minimal : compétences + une expérience avec skillsUsed. */
 const PROFILE: ProfileDTO = {
   id: 'prof-1',
+  fullName: 'Léa Dupont',
+  email: null,
+  phone: null,
+  location: null,
+  links: [],
+  languages: [],
+  keySkills: [],
+  baseCvDesign: null,
   headline: 'Cheffe de projet digital',
   summary: 'Cinq ans en gestion de projet agile.',
   experiences: [

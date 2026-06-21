@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
       experiences: { orderBy: { orderIndex: 'asc' } },
       skills: { orderBy: { orderIndex: 'asc' } },
       education: { orderBy: { orderIndex: 'asc' } },
+      languages: { orderBy: { orderIndex: 'asc' } },
     },
   })
 

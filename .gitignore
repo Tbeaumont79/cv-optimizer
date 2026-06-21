@@ -3,6 +3,7 @@ node_modules/
 .pnpm-store/
 
 # Nuxt
+.nuxt/
 apps/app/.nuxt/
 apps/app/.output/
 apps/app/.data/

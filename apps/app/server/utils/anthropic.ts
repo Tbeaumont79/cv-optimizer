@@ -21,11 +21,24 @@ const PRICING: Record<string, { in: number; out: number }> = {
   'claude-opus-4-8': { in: 5, out: 25 },
 }
 
+/**
+ * Bloc de contenu d'un message utilisateur. Permet d'envoyer un document (PDF)
+ * ou une image en plus du texte. Forme API Messages : le bloc `document`/`image`
+ * doit précéder le bloc texte. PDF en base64 : pas de beta header requis.
+ */
+export type LlmContentBlock =
+  | { type: 'text'; text: string }
+  | { type: 'document'; source: { type: 'base64'; media_type: 'application/pdf'; data: string } }
+  | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } }
+
 export interface LlmRequest {
   /** Consignes système (rôle/tâche). Pas de contenu CV au-delà du strict nécessaire. */
   system: string
-  /** Message utilisateur : données structurées (profil réel + offre analysée). */
-  user: string
+  /**
+   * Message utilisateur : soit une string (cas courant : données structurées),
+   * soit une liste de blocs (texte + document PDF / image) pour la vision.
+   */
+  user: string | LlmContentBlock[]
   /** JSON Schema imposé à la sortie. */
   schema: Record<string, unknown>
   /** Étiquette de coût pour le log (ex. `offer-analysis`). JAMAIS de contenu. */
@@ -100,7 +113,22 @@ export const anthropicComplete: LlmComplete = async (req) => {
     },
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw new LlmError(`Claude API ${res.status}`)
+  if (!res.ok) {
+    // Le corps d'erreur de l'API décrit le problème (schéma invalide, grammaire
+    // trop grande, etc.) — RGPD-safe (aucun contenu utilisateur). On le logge et
+    // on l'inclut dans l'erreur pour rendre les 502 diagnosticables.
+    let detail = ''
+    try {
+      const errBody = (await res.json()) as { error?: { message?: string } }
+      detail = errBody?.error?.message ?? ''
+    } catch {
+      /* corps non-JSON : on garde juste le statut */
+    }
+    console.warn(
+      JSON.stringify({ event: 'llm_error', label: req.costLabel, model, status: res.status, detail }),
+    )
+    throw new LlmError(`Claude API ${res.status}${detail ? `: ${detail}` : ''}`)
+  }
 
   const data = (await res.json()) as {
     stop_reason?: string
