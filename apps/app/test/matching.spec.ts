@@ -12,6 +12,14 @@ import type { LlmComplete } from '../server/utils/anthropic'
 /** Profil réel minimal : 1 expérience + 1 compétence. Ids = source de vérité. */
 const PROFILE: ProfileDTO = {
   id: 'prof-1',
+  fullName: 'Camille Martin',
+  email: null,
+  phone: null,
+  location: null,
+  links: [],
+  languages: [],
+  keySkills: [],
+  baseCvDesign: null,
   headline: 'Dev full-stack',
   summary: 'Quatre ans de TypeScript.',
   experiences: [

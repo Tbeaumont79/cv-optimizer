@@ -25,12 +25,24 @@ function resolveChromiumPath(): string {
   return MAC_CHROME
 }
 
+/** Marges A4 par défaut (template par défaut). */
+const DEFAULT_MARGIN = { top: '12mm', right: '14mm', bottom: '12mm', left: '14mm' }
+/** Marges nulles : pour un thème « CV de base » qui gère lui-même ses paddings
+ *  (sidebar pleine page) via `@page{margin:0}` + paddings sur .cv-header/.cv-main. */
+const ZERO_MARGIN = { top: '0', right: '0', bottom: '0', left: '0' }
+
+export interface RenderPdfOptions {
+  /** true ⇒ marges nulles (le thème gère ses paddings). Défaut : marges A4. */
+  fullBleed?: boolean
+}
+
 /**
  * Convertit un fragment HTML en PDF A4.
- * @param html Fragment HTML complet (head + body) rendu par le template Vue.
+ * @param html Fragment HTML complet (head + body).
+ * @param opts `fullBleed` pour laisser un thème gérer ses propres marges.
  * @returns ArrayBuffer du PDF.
  */
-export async function renderHtmlToPdf(html: string): Promise<ArrayBuffer> {
+export async function renderHtmlToPdf(html: string, opts: RenderPdfOptions = {}): Promise<ArrayBuffer> {
   const executablePath = resolveChromiumPath()
   const browser = await chromium.launch({
     executablePath,
@@ -42,7 +54,10 @@ export async function renderHtmlToPdf(html: string): Promise<ArrayBuffer> {
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: '12mm', right: '14mm', bottom: '12mm', left: '14mm' },
+      margin: opts.fullBleed ? ZERO_MARGIN : DEFAULT_MARGIN,
+      // Le CV est un document 1 page : on ne sort QUE la 1re page. Tout débordement
+      // est coupé net (l'éditeur avertit en amont du risque de dépassement).
+      pageRanges: '1',
     })
     return pdfBuffer.buffer as ArrayBuffer
   } finally {

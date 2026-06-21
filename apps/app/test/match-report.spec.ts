@@ -6,6 +6,14 @@ import { LlmError, type LlmComplete } from '../server/utils/anthropic'
 /** Profil réel minimal : la compétence TypeScript couvre l'offre OFFER. */
 const PROFILE: ProfileDTO = {
   id: 'prof-1',
+  fullName: 'Camille Martin',
+  email: null,
+  phone: null,
+  location: null,
+  links: [],
+  languages: [],
+  keySkills: [],
+  baseCvDesign: null,
   headline: 'Dev full-stack',
   summary: 'Quatre ans de TypeScript.',
   experiences: [

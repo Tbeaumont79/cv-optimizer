@@ -22,17 +22,20 @@ export interface HealthStatus {
 export const HEALTH_PATH = '/api/health' as const
 
 // Profil candidat — SEULE source de contenu du moteur (THI-123).
-export * from './profile'
+export * from './profile.js'
 
 // Contrat du CV structuré + garde-fou de provenance (THI-124 ↔ THI-125).
-export * from './cv'
-export * from './provenance'
+export * from './cv.js'
+export * from './provenance.js'
 
 // Metering & quotas (THI-126) — mesure d'usage + base billing freemium.
-export * from './usage'
+export * from './usage.js'
 
 // Analyse d'offre — consignes de tri/reformulation du moteur (THI-124).
-export * from './offer'
+export * from './offer.js'
 
 // Score de match + contrats API du flux « Nouvelle candidature ».
-export * from './match'
+export * from './match.js'
+
+// Candidature persistée (offre + CV éditable + suivi).
+export * from './candidature.js'

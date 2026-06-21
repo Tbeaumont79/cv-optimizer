@@ -10,12 +10,16 @@
  * RGPD : ni l'offre, ni le profil, ni le CV ne sont loggés — seulement les tokens.
  */
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import {
   FREE_TIER_QUOTAS,
   ProvenanceError,
   QUOTA_EXCEEDED_CODE,
   type AnalyzedOffer,
-  type RenderableCv,
+  type CvContact,
+  type GenerateCandidatureResponse,
+  type MatchReport,
+  type ProfileDTO,
 } from '@cvo/shared'
 import { requireUserId } from '../../utils/session'
 import { prisma } from '../../utils/prisma'
@@ -23,6 +27,7 @@ import { NOT_DELETED, toProfileDTO } from '../../utils/profile-serialize'
 import { isUsageAllowed, recordUsageEvent } from '../../utils/metering'
 import { anthropicComplete, LlmError, type LlmComplete } from '../../utils/anthropic'
 import { matchProfileToOffer } from '../../services/matching'
+import { adaptKeySkills } from '../../services/keyskills-adapt'
 
 const bodySchema = z.object({
   offer: z.object({
@@ -31,23 +36,34 @@ const bodySchema = z.object({
     keywords: z.array(z.string()),
     seniority: z.enum(['junior', 'mid', 'senior', 'lead']).nullable(),
   }),
+  // Rapport de match déjà calculé à /analyze — persisté avec la candidature.
+  match: z.object({
+    score: z.number(),
+    reasons: z.array(z.string()),
+    matchedKeywords: z.array(z.string()),
+    missingKeywords: z.array(z.string()),
+  }),
 })
 
-export default defineEventHandler(async (event): Promise<{ cv: RenderableCv }> => {
+export default defineEventHandler(async (event): Promise<GenerateCandidatureResponse> => {
   const userId = requireUserId(event)
 
   const parsed = bodySchema.safeParse(await readBody(event))
   if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      message: 'Corps invalide : { offer: AnalyzedOffer } attendu.',
+      message: 'Corps invalide : { offer: AnalyzedOffer, match: MatchReport } attendu.',
     })
   }
   const offer: AnalyzedOffer = parsed.data.offer
+  const match: MatchReport = parsed.data.match
 
   // Gate quota AVANT tout appel LLM (aucun token consommé si quota atteint).
+  // Bypass via env DISABLE_GENERATION_LIMIT=true (dev/temporaire — le modèle éco
+  // freemium reste en place, ce n'est PAS un illimité de prod).
   const now = new Date()
-  const allowed = await isUsageAllowed(prisma, userId, 'generation', FREE_TIER_QUOTAS, now)
+  const limitDisabled = process.env.DISABLE_GENERATION_LIMIT === 'true'
+  const allowed = limitDisabled || (await isUsageAllowed(prisma, userId, 'generation', FREE_TIER_QUOTAS, now))
   if (!allowed) {
     throw createError({
       statusCode: 403,
@@ -63,6 +79,7 @@ export default defineEventHandler(async (event): Promise<{ cv: RenderableCv }> =
       experiences: { orderBy: { orderIndex: 'asc' } },
       skills: { orderBy: { orderIndex: 'asc' } },
       education: { orderBy: { orderIndex: 'asc' } },
+      languages: { orderBy: { orderIndex: 'asc' } },
     },
   })
   const profile = profileRow ? toProfileDTO(profileRow) : null
@@ -71,6 +88,23 @@ export default defineEventHandler(async (event): Promise<{ cv: RenderableCv }> =
       statusCode: 409,
       message: "Complète d'abord ton profil",
       data: { code: 'profile_empty' },
+    })
+  }
+
+  // Identité du candidat (nom + email par défaut) : factuelle, posée côté serveur
+  // — jamais inventée par le LLM. Le compte fournit l'email de repli.
+  const account = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true, email: true },
+  })
+  const fullName = (profile.fullName ?? '').trim() || (account?.name ?? '').trim()
+  if (!fullName) {
+    // Sans nom, le header du CV serait vide et l'export PDF échouerait (400).
+    // On guide vers le profil AVANT de consommer un appel LLM.
+    throw createError({
+      statusCode: 409,
+      message: 'Ajoute ton nom complet à ton profil',
+      data: { code: 'profile_name_missing' },
     })
   }
 
@@ -89,13 +123,60 @@ export default defineEventHandler(async (event): Promise<{ cv: RenderableCv }> =
   try {
     const cv = await matchProfileToOffer(profile, offer, { complete })
 
+    // Identité = données factuelles : on écrase ce que le LLM a pu produire dans
+    // le header (nom + contacts) par les valeurs réelles du profil/compte. La
+    // provenance et l'accroche reformulée par le moteur sont conservées.
+    cv.header.fullName = fullName
+    cv.header.contacts = buildContacts(profile, account?.email ?? null)
+
+    // Compétences clés (phrases verbe d'action) : on PART des phrases réelles du
+    // profil et on les fait ADAPTER à l'offre (reformulation/priorisation), borné
+    // aux phrases sources — jamais d'ajout. Repli verbatim si l'adaptation échoue.
+    // Posées au-dessus des expériences ; provenance = profil (garde-fou satisfait).
+    if (profile.keySkills.length) {
+      let phrases = profile.keySkills
+      try {
+        phrases = await adaptKeySkills(profile.keySkills, offer, { complete })
+      } catch {
+        phrases = profile.keySkills
+      }
+      const keySection = {
+        kind: 'keyskills' as const,
+        title: 'Compétences clés',
+        entries: phrases.map((text, i) => ({
+          id: `ks-${i}`,
+          text,
+          provenance: { profileItemId: profile.id, reformulated: true },
+        })),
+      }
+      const expIdx = cv.sections.findIndex((s) => s.kind === 'experience')
+      cv.sections.splice(expIdx >= 0 ? expIdx : cv.sections.length, 0, keySection)
+    }
+
     await recordUsageEvent(
       prisma,
       { userId, type: 'generation', tokensIn, tokensOut, billable: false },
       new Date(),
     )
 
-    return { cv }
+    // Persiste la candidature (CV durable + suivi). Design seedé depuis le « CV de
+    // base » du profil (ou null → fallback au rendu). Statut initial = brouillon.
+    const candidature = await prisma.candidature.create({
+      data: {
+        userId,
+        label: offer.title,
+        offerSnapshot: offer as unknown as Prisma.InputJsonValue,
+        matchScore: Math.round(match.score),
+        matchReport: match as unknown as Prisma.InputJsonValue,
+        generatedCv: cv as unknown as Prisma.InputJsonValue,
+        design: profile.baseCvDesign
+          ? (profile.baseCvDesign as unknown as Prisma.InputJsonValue)
+          : Prisma.DbNull,
+      },
+      select: { id: true },
+    })
+
+    return { cv, candidatureId: candidature.id }
   } catch (err) {
     // Garde-fou de provenance : le LLM a produit un élément non sourcé — rejeté.
     if (err instanceof ProvenanceError) {
@@ -114,3 +195,29 @@ export default defineEventHandler(async (event): Promise<{ cv: RenderableCv }> =
     throw err
   }
 })
+
+/**
+ * Construit les contacts factuels du header à partir du profil (email du compte
+ * en repli). Aucune reformulation : valeurs reprises telles quelles.
+ */
+function buildContacts(profile: ProfileDTO, accountEmail: string | null): CvContact[] {
+  const contacts: CvContact[] = []
+  const email = (profile.email ?? '').trim() || (accountEmail ?? '').trim()
+  if (email) contacts.push({ kind: 'email', label: 'Email', value: email })
+  if (profile.phone?.trim()) contacts.push({ kind: 'phone', label: 'Téléphone', value: profile.phone.trim() })
+  if (profile.location?.trim()) contacts.push({ kind: 'location', label: 'Localisation', value: profile.location.trim() })
+  for (const raw of profile.links ?? []) {
+    const value = raw.trim()
+    if (value) contacts.push({ kind: 'link', label: linkLabel(value), value })
+  }
+  return contacts
+}
+
+/** Libellé lisible d'un lien (hôte sans `www.`), avec repli sur « Lien ». */
+function linkLabel(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return 'Lien'
+  }
+}

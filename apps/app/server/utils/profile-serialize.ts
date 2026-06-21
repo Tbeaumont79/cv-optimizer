@@ -1,4 +1,5 @@
-import type { EducationDTO, ExperienceDTO, ProfileDTO, SkillDTO } from '@cvo/shared'
+import type { EducationDTO, ExperienceDTO, LanguageDTO, ProfileDTO, SkillDTO } from '@cvo/shared'
+import { normalizeDesign } from './cv-design-tokens'
 
 /**
  * Sérialisation Profil (Prisma → DTO transport) et fragment de filtre soft-delete.
@@ -54,13 +55,28 @@ interface EducationRow extends SoftDeletable {
   description: string | null
   orderIndex: number
 }
+interface LanguageRow extends SoftDeletable {
+  id: string
+  label: string
+  level: LanguageDTO['level']
+  orderIndex: number
+}
 interface ProfileRow {
   id: string
+  fullName: string | null
+  email: string | null
+  phone: string | null
+  location: string | null
+  links: string[]
+  keySkills: string[]
   headline: string | null
   summary: string | null
   experiences: ExperienceRow[]
   skills: SkillRow[]
   education: EducationRow[]
+  languages: LanguageRow[]
+  // Colonne Json Prisma — forme `CvDesign` (ou null). Validée à l'écriture.
+  baseCvDesign?: unknown
 }
 
 function toExperienceDTO(e: ExperienceRow): ExperienceDTO {
@@ -78,6 +94,10 @@ function toExperienceDTO(e: ExperienceRow): ExperienceDTO {
 
 function toSkillDTO(s: SkillRow): SkillDTO {
   return { id: s.id, label: s.label, level: s.level, years: s.years, orderIndex: s.orderIndex }
+}
+
+function toLanguageDTO(l: LanguageRow): LanguageDTO {
+  return { id: l.id, label: l.label, level: l.level, orderIndex: l.orderIndex }
 }
 
 function toEducationDTO(ed: EducationRow): EducationDTO {
@@ -99,10 +119,18 @@ function toEducationDTO(ed: EducationRow): EducationDTO {
 export function toProfileDTO(profile: ProfileRow): ProfileDTO {
   return {
     id: profile.id,
+    fullName: profile.fullName,
+    email: profile.email,
+    phone: profile.phone,
+    location: profile.location,
+    links: profile.links,
+    keySkills: profile.keySkills,
     headline: profile.headline,
     summary: profile.summary,
     experiences: activeOrdered(profile.experiences).map(toExperienceDTO),
     skills: activeOrdered(profile.skills).map(toSkillDTO),
     education: activeOrdered(profile.education).map(toEducationDTO),
+    languages: activeOrdered(profile.languages).map(toLanguageDTO),
+    baseCvDesign: profile.baseCvDesign ? normalizeDesign(profile.baseCvDesign) : null,
   }
 }

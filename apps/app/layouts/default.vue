@@ -18,11 +18,10 @@ const userInitial = computed(() => user.value?.email?.charAt(0)?.toUpperCase() ?
 const navLinks = [
   { label: 'Nouvelle candidature', to: '/candidature' },
   { label: 'Mon profil', to: '/profil' },
-  { label: 'Mon CV', to: '/cv/demo' },
+  { label: 'Mes candidatures', to: '/candidatures' },
 ] as const
 
 function isActive(to: string) {
-  if (to === '/cv/demo') return route.path.startsWith('/cv')
   return route.path === to || route.path.startsWith(`${to}/`)
 }
 
@@ -116,20 +115,6 @@ const year = new Date().getFullYear()
                 {{ link.label }}
               </NuxtLink>
             </template>
-
-            <NuxtLink
-              v-if="isDev"
-              to="/ui"
-              class="rounded-control px-3 py-1.5 text-sm font-medium transition-colors duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-              :class="
-                isActive('/ui')
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-ink-600 hover:bg-surface-muted hover:text-ink-900'
-              "
-              :aria-current="isActive('/ui') ? 'page' : undefined"
-            >
-              Design system
-            </NuxtLink>
           </nav>
         </div>
 

@@ -41,7 +41,12 @@ export const ANALYZED_OFFER_SCHEMA = {
     title: { type: 'string' },
     requiredSkills: { type: 'array', items: { type: 'string' } },
     keywords: { type: 'array', items: { type: 'string' } },
-    seniority: { type: ['string', 'null'], enum: [...OFFER_SENIORITIES, null] },
+    // Nullable + enum : le validateur de sortie structurée d'Anthropic refuse
+    // `type: ['string','null']` avec un `enum` (ou un `null` dans l'enum). La
+    // forme `anyOf` est la seule acceptée pour un enum optionnel.
+    seniority: {
+      anyOf: [{ type: 'string', enum: [...OFFER_SENIORITIES] }, { type: 'null' }],
+    },
   },
   required: ['title', 'requiredSkills', 'keywords', 'seniority'],
 } as const

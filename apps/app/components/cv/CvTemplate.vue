@@ -18,6 +18,12 @@ function isEducation(s: CvSection): s is Extract<CvSection, { kind: 'education' 
 function isSummary(s: CvSection): s is Extract<CvSection, { kind: 'summary' }> {
   return s.kind === 'summary'
 }
+function isKeySkills(s: CvSection): s is Extract<CvSection, { kind: 'keyskills' }> {
+  return s.kind === 'keyskills'
+}
+function isLanguages(s: CvSection): s is Extract<CvSection, { kind: 'languages' }> {
+  return s.kind === 'languages'
+}
 </script>
 
 <template>
@@ -116,6 +122,20 @@ function isSummary(s: CvSection): s is Extract<CvSection, { kind: 'summary' }> {
           {{ section.text }}
         </p>
 
+        <!-- Compétences clés (phrases) -->
+        <ul
+          v-else-if="isKeySkills(section)"
+          class="list-disc space-y-1 pl-4"
+        >
+          <li
+            v-for="entry in section.entries"
+            :key="entry.id"
+            class="text-sm leading-relaxed text-ink-700 marker:text-brand-500"
+          >
+            {{ entry.text }}
+          </li>
+        </ul>
+
         <!-- Expériences -->
         <div
           v-else-if="isExperience(section)"
@@ -179,6 +199,20 @@ function isSummary(s: CvSection): s is Extract<CvSection, { kind: 'summary' }> {
             <p class="shrink-0 text-xs text-ink-500">{{ entry.period }}</p>
           </div>
         </div>
+
+        <!-- Langues -->
+        <ul
+          v-else-if="isLanguages(section)"
+          class="flex flex-wrap gap-2"
+        >
+          <li
+            v-for="entry in section.entries"
+            :key="entry.id"
+            class="rounded-card bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700"
+          >
+            {{ entry.label }}<span v-if="entry.level" class="font-normal text-brand-500"> · {{ entry.level }}</span>
+          </li>
+        </ul>
       </section>
     </main>
   </article>

@@ -11,7 +11,7 @@ const bodySchema = z.object({
   company: z.string().min(1).max(150),
   startDate: z.string().datetime({ offset: true }).nullable().optional(),
   endDate: z.string().datetime({ offset: true }).nullable().optional(),
-  description: z.string().max(2000).nullable().optional(),
+  description: z.string().max(8000).nullable().optional(),
   skillsUsed: z.array(z.string().max(80)).max(30).default([]),
   orderIndex: z.number().int().min(0).default(0),
 })
