@@ -6,11 +6,14 @@
  * provient du body (éditeur, design par-candidature) sinon du profil sinon défaut.
  */
 import type { CvDesign } from '@cvo/shared'
+import { requireUserId } from '../../utils/session'
 import { buildCvHtml } from '../../utils/cv-html'
 import { loadBaseCvDesign } from '../../utils/cv-design'
 import { parseRenderInput } from '../../utils/cv-render-input'
 
 export default defineEventHandler(async (event) => {
+  // Auth requise : endpoint de rendu réservé aux utilisateurs connectés.
+  requireUserId(event)
   const { cv, design } = parseRenderInput(await readBody(event))
   const effective: CvDesign | null = design ?? (await loadBaseCvDesign(event))
 
