@@ -29,9 +29,9 @@
 \* Élevé **conditionnel** au déploiement actuel (pas de SMTP câblé → le jeton part dans les logs).
 
 > **Statut correctifs (branche `fix/security-hardening`) :**
-> ✅ **corrigés** — #1 (fail-fast secret via plugin Nitro), #2 (auth + quota + metering sur `export-pdf`, auth sur `preview`), #3 (magic-link : échec explicite en prod, plus de log), #4 (**nuxt-security** : HSTS/XFO/nosniff/Referrer/Permissions + **CSP en Report-Only**), #6 (cookies `Secure` + `trustedOrigins`), #9 (catch `InsufficientCreditsError` → 403), #10 (bornes Zod + `requestSizeLimiter`).
-> �️ **partiel** — #5 : rate-limit **magic-link** actif (Better Auth, 3/min) ; **reste** la limite par-utilisateur sur `/analyze` (à décider : seuil + stockage). #11 : mitigé par #6 (SameSite=Lax + `trustedOrigins`) ; CSRF middleware nuxt-security laissé off pour ne pas casser le webhook Stripe.
-> ⏳ **restants** — **passer la CSP en mode bloquant** après validation navigateur (retirer `contentSecurityPolicyReportOnly`), limite `/analyze`, #7 bump `nodemailer`, #8 sandbox Chromium (infra), #12 updates deps (`better-auth`).
+> ✅ **corrigés** — #1 (fail-fast secret via plugin Nitro), #2 (auth + quota + metering sur `export-pdf`, auth sur `preview`), #3 (magic-link : échec explicite en prod, plus de log), #4 (**nuxt-security** : HSTS/XFO/nosniff/Referrer/Permissions + **CSP active/bloquante**, validée navigateur via collecteur `/api/csp-report`, Google Fonts du rendu CV en allowlist), #6 (cookies `Secure` + `trustedOrigins`), #9 (catch `InsufficientCreditsError` → 403), #10 (bornes Zod + `requestSizeLimiter`).
+> 🟡 **partiel** — #5 : rate-limit **magic-link** actif (Better Auth, 3/min) ; **reste** la limite par-utilisateur sur `/analyze` (à décider : seuil + stockage). #11 : mitigé par #6 (SameSite=Lax + `trustedOrigins`) ; CSRF middleware nuxt-security laissé off pour ne pas casser le webhook Stripe.
+> ⏳ **restants** — limite `/analyze`, #7 bump `nodemailer`, #8 sandbox Chromium (infra), #12 updates deps (`better-auth`). Suivi #3 : auto-héberger les polices du CV pour retirer les hôtes Google Fonts de la CSP.
 >
 > ⚠️ Notes : l'export PDF depuis la page publique `/cv/demo` exige désormais d'être connecté (conséquence de #2). Le rate-limit magic-link et le limiteur nuxt-security sont **en mémoire par instance** → prévoir un stockage partagé (Redis/DB) en multi-instance.
 
