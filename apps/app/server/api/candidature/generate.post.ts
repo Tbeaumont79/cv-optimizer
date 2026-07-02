@@ -24,7 +24,7 @@ import { requireUserId } from '../../utils/session'
 import { prisma } from '../../utils/prisma'
 import { NOT_DELETED, toProfileDTO } from '../../utils/profile-serialize'
 import { recordUsageEvent } from '../../utils/metering'
-import { getOrInitBalance, consumeOneCredit } from '../../utils/credits'
+import { getOrInitBalance, consumeOneCredit, InsufficientCreditsError } from '../../utils/credits'
 import { anthropicComplete, LlmError, type LlmComplete } from '../../utils/anthropic'
 import { matchProfileToOffer } from '../../services/matching'
 import { adaptKeySkills } from '../../services/keyskills-adapt'
@@ -183,6 +183,16 @@ export default defineEventHandler(async (event): Promise<GenerateCandidatureResp
 
     return { cv, candidatureId: candidature.id }
   } catch (err) {
+    // Course concurrente sur le dernier crédit : la transaction de débit relit le
+    // solde et lève si un autre appel a consommé entre-temps. On renvoie un 403
+    // propre (pas un 500), cohérent avec le gate d'entrée.
+    if (err instanceof InsufficientCreditsError) {
+      throw createError({
+        statusCode: 403,
+        message: 'Tu n’as plus de crédits — achète un pack pour continuer',
+        data: { code: QUOTA_EXCEEDED_CODE },
+      })
+    }
     // Garde-fou de provenance : le LLM a produit un élément non sourcé — rejeté.
     if (err instanceof ProvenanceError) {
       throw createError({

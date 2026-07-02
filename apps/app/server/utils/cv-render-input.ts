@@ -7,23 +7,28 @@ import { assertValidCv } from '@cvo/shared'
 import type { CvDesign, RenderableCv } from '@cvo/shared'
 import { normalizeDesign } from './cv-design-tokens'
 
-const Provenance = z.object({ profileItemId: z.string(), reformulated: z.boolean() })
-const Contact = z.object({ kind: z.enum(['email', 'phone', 'location', 'link']), label: z.string(), value: z.string() })
-const Bullet = z.object({ id: z.string(), text: z.string(), provenance: Provenance })
-const BaseEntry = z.object({ id: z.string(), provenance: Provenance })
+// Bornes de taille : un CV valide reste modeste. Elles plafonnent le HTML/JSON
+// pour éviter un rendu Chromium géant / une persistance JSON abusive (anti-DoS).
+const S = (max: number) => z.string().max(max)
+const ID = z.string().max(200)
+
+const Provenance = z.object({ profileItemId: ID, reformulated: z.boolean() })
+const Contact = z.object({ kind: z.enum(['email', 'phone', 'location', 'link']), label: S(100), value: S(500) })
+const Bullet = z.object({ id: ID, text: S(2000), provenance: Provenance })
+const BaseEntry = z.object({ id: ID, provenance: Provenance })
 
 const Section = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('summary'), title: z.string(), text: z.string(), provenance: Provenance }),
-  z.object({ kind: z.literal('keyskills'), title: z.string(), entries: z.array(BaseEntry.extend({ text: z.string() })) }),
-  z.object({ kind: z.literal('experience'), title: z.string(), entries: z.array(BaseEntry.extend({ role: z.string(), organization: z.string(), period: z.string(), location: z.string().optional(), bullets: z.array(Bullet) })) }),
-  z.object({ kind: z.literal('skills'), title: z.string(), entries: z.array(BaseEntry.extend({ label: z.string() })) }),
-  z.object({ kind: z.literal('education'), title: z.string(), entries: z.array(BaseEntry.extend({ degree: z.string(), institution: z.string(), period: z.string() })) }),
-  z.object({ kind: z.literal('languages'), title: z.string(), entries: z.array(BaseEntry.extend({ label: z.string(), level: z.string() })) }),
+  z.object({ kind: z.literal('summary'), title: S(200), text: S(5000), provenance: Provenance }),
+  z.object({ kind: z.literal('keyskills'), title: S(200), entries: z.array(BaseEntry.extend({ text: S(1000) })).max(30) }),
+  z.object({ kind: z.literal('experience'), title: S(200), entries: z.array(BaseEntry.extend({ role: S(300), organization: S(300), period: S(120), location: S(300).optional(), bullets: z.array(Bullet).max(40) })).max(40) }),
+  z.object({ kind: z.literal('skills'), title: S(200), entries: z.array(BaseEntry.extend({ label: S(200) })).max(100) }),
+  z.object({ kind: z.literal('education'), title: S(200), entries: z.array(BaseEntry.extend({ degree: S(300), institution: S(300), period: S(120) })).max(30) }),
+  z.object({ kind: z.literal('languages'), title: S(200), entries: z.array(BaseEntry.extend({ label: S(200), level: S(100) })).max(50) }),
 ])
 
 export const RenderableCvSchema = z.object({
-  header: z.object({ fullName: z.string().min(1), headline: z.string(), contacts: z.array(Contact), provenance: Provenance }),
-  sections: z.array(Section),
+  header: z.object({ fullName: z.string().min(1).max(200), headline: S(300), contacts: z.array(Contact).max(20), provenance: Provenance }),
+  sections: z.array(Section).max(20),
   locale: z.literal('fr'),
 })
 

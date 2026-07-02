@@ -29,8 +29,12 @@ export async function sendMagicLinkEmail(email: string, magicLinkUrl: string): P
       text: `Bonjour,\n\nCliquez sur ce lien pour vous connecter (valable 10 minutes) :\n${magicLinkUrl}\n\nSi vous n'avez pas demandé ce lien, ignorez cet e-mail.\n\n— L'équipe CV Optimizer`,
       html: `<p>Bonjour,</p><p>Cliquez sur ce lien pour vous connecter (valable 10 minutes) :</p><p><a href="${magicLinkUrl}">${magicLinkUrl}</a></p><p>Si vous n'avez pas demandé ce lien, ignorez cet e-mail.</p><p>— L'équipe CV Optimizer</p>`,
     })
-  } else {
-    // Dev : affiche le lien dans la console pour test sans SMTP.
+  } else if (process.env.NODE_ENV !== 'production') {
+    // Dev uniquement : affiche le lien dans la console pour test sans SMTP.
     console.log(`\n[DEV] Magic-link pour ${email}:\n  ${magicLinkUrl}\n`)
+  } else {
+    // Prod sans SMTP : ne JAMAIS logger un jeton d'auth (vol de session via logs).
+    // On échoue explicitement — la connexion est cassée tant que SMTP n'est pas câblé.
+    throw new Error('SMTP non configuré en production — envoi du magic-link impossible.')
   }
 }

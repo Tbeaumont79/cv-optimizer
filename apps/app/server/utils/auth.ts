@@ -15,6 +15,29 @@ export const auth = betterAuth({
   secret: config.authSecret,
   baseURL: config.public.appUrl,
 
+  // Origines de confiance (défense CSRF de Better Auth sur /api/auth/**). Explicite
+  // pour éviter toute dérive si `baseURL` change.
+  trustedOrigins: [config.public.appUrl],
+
+  advanced: {
+    // Force les cookies de session en Secure en prod (transmis uniquement en HTTPS),
+    // sans dépendre du protocole de `baseURL`. HttpOnly + SameSite=Lax restent les défauts.
+    useSecureCookies: process.env.NODE_ENV === 'production',
+  },
+
+  // Rate-limit des routes d'auth : bride surtout l'envoi de magic-link (anti
+  // email-bombing / énumération). Stockage en mémoire par défaut (par instance) ;
+  // en multi-instance prod, basculer sur un stockage partagé (DB/secondaryStorage).
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 30,
+    customRules: {
+      // Chemin réel du plugin magic-link : POST /api/auth/sign-in/magic-link.
+      '/sign-in/magic-link': { window: 60, max: 3 }, // 3 envois / min max
+    },
+  },
+
   database: prismaAdapter(prisma, { provider: 'postgresql' }),
 
   // FR-first : labels et messages côté e-mail en français.
