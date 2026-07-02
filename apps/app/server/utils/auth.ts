@@ -25,6 +25,19 @@ export const auth = betterAuth({
     useSecureCookies: process.env.NODE_ENV === 'production',
   },
 
+  // Rate-limit des routes d'auth : bride surtout l'envoi de magic-link (anti
+  // email-bombing / énumération). Stockage en mémoire par défaut (par instance) ;
+  // en multi-instance prod, basculer sur un stockage partagé (DB/secondaryStorage).
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 30,
+    customRules: {
+      // Chemin réel du plugin magic-link : POST /api/auth/sign-in/magic-link.
+      '/sign-in/magic-link': { window: 60, max: 3 }, // 3 envois / min max
+    },
+  },
+
   database: prismaAdapter(prisma, { provider: 'postgresql' }),
 
   // FR-first : labels et messages côté e-mail en français.

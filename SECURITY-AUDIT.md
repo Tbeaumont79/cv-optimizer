@@ -28,7 +28,12 @@
 
 \* Élevé **conditionnel** au déploiement actuel (pas de SMTP câblé → le jeton part dans les logs).
 
-> **Statut correctifs (branche `fix/security-hardening`) :** ✅ **corrigés** — #1 (fail-fast secret via plugin Nitro), #2 (auth + quota + metering sur `export-pdf`, auth sur `preview`), #3 (magic-link : échec explicite en prod, plus de log), #6 (cookies `Secure` + `trustedOrigins`), #9 (catch `InsufficientCreditsError` → 403), #10 (bornes Zod sur le rendu CV). ⏳ **restants** (nécessitent tests/décision) — #4 headers/CSP, #5 rate-limit, #7 bump `nodemailer`, #8 sandbox Chromium (infra), #11 CSRF (mitigé par #6), #12 updates deps. Note : l'export PDF depuis la page publique `/cv/demo` exige désormais d'être connecté (conséquence assumée de #2).
+> **Statut correctifs (branche `fix/security-hardening`) :**
+> ✅ **corrigés** — #1 (fail-fast secret via plugin Nitro), #2 (auth + quota + metering sur `export-pdf`, auth sur `preview`), #3 (magic-link : échec explicite en prod, plus de log), #4 (**nuxt-security** : HSTS/XFO/nosniff/Referrer/Permissions + **CSP en Report-Only**), #6 (cookies `Secure` + `trustedOrigins`), #9 (catch `InsufficientCreditsError` → 403), #10 (bornes Zod + `requestSizeLimiter`).
+> �️ **partiel** — #5 : rate-limit **magic-link** actif (Better Auth, 3/min) ; **reste** la limite par-utilisateur sur `/analyze` (à décider : seuil + stockage). #11 : mitigé par #6 (SameSite=Lax + `trustedOrigins`) ; CSRF middleware nuxt-security laissé off pour ne pas casser le webhook Stripe.
+> ⏳ **restants** — **passer la CSP en mode bloquant** après validation navigateur (retirer `contentSecurityPolicyReportOnly`), limite `/analyze`, #7 bump `nodemailer`, #8 sandbox Chromium (infra), #12 updates deps (`better-auth`).
+>
+> ⚠️ Notes : l'export PDF depuis la page publique `/cv/demo` exige désormais d'être connecté (conséquence de #2). Le rate-limit magic-link et le limiteur nuxt-security sont **en mémoire par instance** → prévoir un stockage partagé (Redis/DB) en multi-instance.
 
 ---
 

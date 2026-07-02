@@ -8,9 +8,48 @@ export default defineNuxtConfig({
 
   // Chargement réel des fontes (self-hosted au build — pas de requête Google au runtime).
   // La famille est consommée via le token --font-sans (assets/css/main.css).
-  modules: ['@nuxt/fonts'],
+  modules: ['@nuxt/fonts', 'nuxt-security'],
   fonts: {
     families: [{ name: 'Plus Jakarta Sans', provider: 'google', weights: [400, 500, 600, 700, 800] }],
+  },
+
+  // Durcissement HTTP (nuxt-security). Headers appliqués globalement ; la CSP est
+  // en Report-Only tant qu'elle n'a pas été validée au navigateur (elle n' observe
+  // et ne bloque RIEN dans cet état — voir /api/_security si besoin).
+  security: {
+    // CSP en Report-Only : le header envoyé est `Content-Security-Policy-Report-Only`,
+    // qui n'BLOQUE rien (observe seulement). Passer à `false` après validation navigateur.
+    contentSecurityPolicyReportOnly: true,
+    // Rate-limit global désactivé : on gère finement ailleurs (Better Auth pour le
+    // magic-link, compteur par utilisateur pour /analyze). Le limiteur intégré est
+    // par-IP en mémoire (par instance) → insuffisant pour l'abus économique.
+    rateLimiter: false,
+    // Le magic-link + les uploads PDF (cv-design/extract, 8 Mo) doivent passer.
+    requestSizeLimiter: {
+      maxRequestSizeInBytes: 2_000_000, // corps JSON standard (2 Mo)
+      maxUploadFileRequestInBytes: 12_000_000, // > 8 Mo pour l'upload PDF multipart
+    },
+    // CSP en observation d'abord : header Report-Only (ne bloque pas).
+    // Passer à `false` une fois la CSP validée pour l'appliquer réellement.
+    headers: {
+      contentSecurityPolicy: {
+        'base-uri': ["'self'"],
+        'default-src': ["'self'"],
+        'object-src': ["'none'"],
+        'frame-ancestors': ["'none'"],
+        'img-src': ["'self'", 'data:'],
+        'font-src': ["'self'"],
+        'style-src': ["'self'", "'unsafe-inline'"],
+        'script-src': ["'self'", "'nonce-{{nonce}}'", "'strict-dynamic'"],
+        'connect-src': ["'self'"],
+        'form-action': ["'self'"],
+        'upgrade-insecure-requests': true,
+      },
+      strictTransportSecurity: { maxAge: 63072000, includeSubdomains: true, preload: true },
+      xFrameOptions: 'DENY',
+      referrerPolicy: 'strict-origin-when-cross-origin',
+      permissionsPolicy: { camera: [], microphone: [], geolocation: [], payment: [] },
+    },
   },
 
   // TS strict des deux côtés (front Vue + serveur Nitro).
