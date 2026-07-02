@@ -73,15 +73,17 @@ enum LanguageLevel {
 // Compte utilisateur — ancre d'authentification (le WS Auth y greffera Better
 // Auth + ses tables satellites). Données auth hébergées en FR/UE (RGPD).
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
+  id               String    @id @default(uuid())
+  email            String    @unique
   // Champs compatibles Better Auth (renseignés par le WS Auth) :
-  emailVerified Boolean   @default(false)
-  name          String?
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime? // soft-delete RGPD (droit à l'effacement)
+  emailVerified    Boolean   @default(false)
+  name             String?
+  image            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime? // soft-delete RGPD (droit à l'effacement)
+  // Client Stripe (billing crédits) — créé à la 1re intention d'achat. Opaque côté app.
+  stripeCustomerId String?   @unique
 
   profile  Profile?
   sessions Session[]
@@ -93,25 +95,25 @@ model User {
 
 // Profil candidat — 1-1 avec User. En-tête + résumé libres.
 model Profile {
-  id        String    @id @default(uuid())
-  userId    String    @unique
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Identité affichée en tête de CV — FACTUELLE, jamais reformulée par le moteur
   // (cf. @cvo/shared cv.ts). Injectée déterministe-ment dans le header généré.
-  fullName  String? // nom complet du candidat (ex. « Camille Martin »)
-  email     String? // email de contact affiché (défaut : email du compte)
-  phone     String? // téléphone de contact
-  location  String? // localisation (ex. « Paris, France »)
-  links     String[] // liens (portfolio, LinkedIn, GitHub…)
-  keySkills String[] // compétences clés : phrases (verbe d'action), section au-dessus des expériences
-  headline  String? // intitulé court (ex. « Développeur Full-Stack »)
-  summary   String? // résumé / accroche
+  fullName     String? // nom complet du candidat (ex. « Camille Martin »)
+  email        String? // email de contact affiché (défaut : email du compte)
+  phone        String? // téléphone de contact
+  location     String? // localisation (ex. « Paris, France »)
+  links        String[] // liens (portfolio, LinkedIn, GitHub…)
+  keySkills    String[] // compétences clés : phrases (verbe d'action), section au-dessus des expériences
+  headline     String? // intitulé court (ex. « Développeur Full-Stack »)
+  summary      String? // résumé / accroche
   // Thème « CV de base » capturé depuis un PDF (style uniquement, jamais de
   // contenu) : { css, googleFont, summary }. Le PDF source n'est JAMAIS stocké.
   baseCvDesign Json?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
 
   experiences Experience[]
   skills      Skill[]
@@ -349,3 +351,45 @@ model Verification {
 // Back-relations Better Auth sur User (ajoutées ici pour éviter de modifier
 // le bloc User déjà posé dans le data model slice 1).
 // Prisma les génère via la relation inverse côté Session/Account.
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Billing — crédits (Stripe Checkout, packs one-shot) · voir config/pricing.ts
+//
+// Modèle : grand livre (ledger) APPEND-ONLY. Le solde = somme des `delta`. Aucune
+// écriture directe d'un solde : chaque octroi (gratuit/achat) ou consommation est
+// une ligne, ce qui garantit l'audit et l'invariant « jamais déficitaire ».
+//   FREE_GRANT  : crédits offerts à l'inscription (1 seule ligne/user, idempotent).
+//   PURCHASE    : achat d'un pack (webhook Stripe ; idempotent par session id).
+//   GENERATION  : consommation d'1 crédit à la génération d'un CV (delta négatif).
+//   ADJUSTMENT  : correction manuelle (SAV) — trace explicite.
+//
+// RGPD : aucune donnée carte ici (gérée par Stripe). On ne stocke qu'un id de
+// session/customer Stripe opaque pour l'idempotence et le rapprochement.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum CreditReason {
+  FREE_GRANT
+  PURCHASE
+  GENERATION
+  ADJUSTMENT
+}
+
+model CreditLedger {
+  id             String       @id @default(uuid())
+  userId         String
+  // Variation de solde : +N (octroi/achat) ou -1 (génération). Jamais 0.
+  delta          Int
+  reason         CreditReason
+  // Clé d'idempotence. PURCHASE : id de session Stripe (1 crédit/paiement).
+  // FREE_GRANT : sentinelle `free:<userId>` (1 octroi gratuit/utilisateur).
+  // GENERATION / ADJUSTMENT : null (plusieurs lignes — NULLs distincts en Postgres).
+  idempotencyKey String?
+  // Nombre de crédits du pack acheté (PURCHASE) — info d'affichage/audit.
+  packKey        String?
+  createdAt      DateTime     @default(now())
+
+  // Un même paiement OU un même octroi gratuit ne s'applique qu'une fois.
+  @@unique([idempotencyKey])
+  @@index([userId])
+  @@map("credit_ledger")
+}

@@ -12,7 +12,6 @@
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import {
-  FREE_TIER_QUOTAS,
   ProvenanceError,
   QUOTA_EXCEEDED_CODE,
   type AnalyzedOffer,
@@ -24,7 +23,8 @@ import {
 import { requireUserId } from '../../utils/session'
 import { prisma } from '../../utils/prisma'
 import { NOT_DELETED, toProfileDTO } from '../../utils/profile-serialize'
-import { isUsageAllowed, recordUsageEvent } from '../../utils/metering'
+import { recordUsageEvent } from '../../utils/metering'
+import { getOrInitBalance, consumeOneCredit } from '../../utils/credits'
 import { anthropicComplete, LlmError, type LlmComplete } from '../../utils/anthropic'
 import { matchProfileToOffer } from '../../services/matching'
 import { adaptKeySkills } from '../../services/keyskills-adapt'
@@ -58,18 +58,19 @@ export default defineEventHandler(async (event): Promise<GenerateCandidatureResp
   const offer: AnalyzedOffer = parsed.data.offer
   const match: MatchReport = parsed.data.match
 
-  // Gate quota AVANT tout appel LLM (aucun token consommé si quota atteint).
-  // Bypass via env DISABLE_GENERATION_LIMIT=true (dev/temporaire — le modèle éco
-  // freemium reste en place, ce n'est PAS un illimité de prod).
-  const now = new Date()
+  // Gate CRÉDITS avant tout appel LLM (aucun token consommé si solde nul). Le solde
+  // inclut les générations offertes (octroi gratuit idempotent au 1er accès). 1 crédit
+  // = 1 génération, débité APRÈS succès. Bypass dev via DISABLE_GENERATION_LIMIT=true.
   const limitDisabled = process.env.DISABLE_GENERATION_LIMIT === 'true'
-  const allowed = limitDisabled || (await isUsageAllowed(prisma, userId, 'generation', FREE_TIER_QUOTAS, now))
-  if (!allowed) {
-    throw createError({
-      statusCode: 403,
-      message: 'Tes générations offertes sont épuisées',
-      data: { code: QUOTA_EXCEEDED_CODE },
-    })
+  if (!limitDisabled) {
+    const balance = await getOrInitBalance(userId)
+    if (balance < 1) {
+      throw createError({
+        statusCode: 403,
+        message: 'Tu n’as plus de crédits — achète un pack pour continuer',
+        data: { code: QUOTA_EXCEEDED_CODE },
+      })
+    }
   }
 
   // Profil réel = seule source de contenu du CV généré (mêmes règles que /analyze).
@@ -158,6 +159,10 @@ export default defineEventHandler(async (event): Promise<GenerateCandidatureResp
       { userId, type: 'generation', tokensIn, tokensOut, billable: false },
       new Date(),
     )
+
+    // Débite 1 crédit pour cette génération réussie (transactionnel, jamais
+    // déficitaire). Bypass dev : on ne débite pas quand le gate est désactivé.
+    if (!limitDisabled) await consumeOneCredit(userId)
 
     // Persiste la candidature (CV durable + suivi). Design seedé depuis le « CV de
     // base » du profil (ou null → fallback au rendu). Statut initial = brouillon.

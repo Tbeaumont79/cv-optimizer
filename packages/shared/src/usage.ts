@@ -59,12 +59,12 @@ export const EMPTY_USAGE_SNAPSHOT: UsageCounterSnapshot = {
 export type UsageQuotas = Partial<Record<UsageEventType, number>>
 
 /**
- * Palier gratuit — modèle acté (2026-06) : 2 générations offertes pour tester,
- * ensuite achat de crédits (config/pricing.ts). Les exports PDF sont plus larges
- * (ré-export d'un CV déjà généré) mais bornés pour éviter l'abus de Chromium.
+ * Quotas par période. La GÉNÉRATION n'est plus un quota mensuel : elle est
+ * gouvernée par le solde de CRÉDITS (générations offertes + packs achetés, cf.
+ * billing/credits). Restent ici les bornes par période non monétisées : l'export
+ * PDF (ré-export d'un CV déjà généré) borné pour éviter l'abus de Chromium.
  */
 export const FREE_TIER_QUOTAS: UsageQuotas = {
-  generation: 2,
   export_pdf: 4,
 }
 
