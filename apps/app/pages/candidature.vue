@@ -2,16 +2,16 @@
 import type {
   AnalyzeCandidatureRequest,
   AnalyzeCandidatureResponse,
+  BillingSummary,
   GenerateCandidatureRequest,
   GenerateCandidatureResponse,
   ProfileDTO,
-  UsageSummary,
 } from '@cvo/shared'
 import {
+  BILLING_SUMMARY_PATH,
   CANDIDATURE_ANALYZE_PATH,
   CANDIDATURE_GENERATE_PATH,
   QUOTA_EXCEEDED_CODE,
-  USAGE_CURRENT_PATH,
   matchVerdict,
 } from '@cvo/shared'
 import type { MatchVerdict } from '@cvo/shared'
@@ -32,22 +32,21 @@ const offerText = ref('')
 const offerError = ref('')
 const analysis = ref<AnalyzeCandidatureResponse | null>(null)
 
-// ─── Quota de générations (badge + gating des boutons) ───────────────────────
+// ─── Solde de crédits (badge + gating des boutons) ───────────────────────────
 
-const { data: usage, refresh: refreshUsage } = await useFetch<UsageSummary>(USAGE_CURRENT_PATH, {
-  lazy: true,
-})
-
-/** `null` = illimité (ou usage pas encore chargé) → pas de badge, pas de blocage. */
-const generationRemaining = computed(
-  () => usage.value?.quotas.find((q) => q.type === 'generation')?.remaining ?? null,
+const { data: billing, refresh: refreshUsage } = await useFetch<BillingSummary>(
+  BILLING_SUMMARY_PATH,
+  { lazy: true },
 )
-const quotaExhausted = computed(() => generationRemaining.value === 0)
+
+/** `null` = solde pas encore chargé → pas de blocage prématuré. */
+const creditBalance = computed(() => billing.value?.creditBalance ?? null)
+const quotaExhausted = computed(() => creditBalance.value !== null && creditBalance.value < 1)
 
 const quotaBadgeLabel = computed(() => {
-  const r = generationRemaining.value
-  if (r === null) return null
-  return r > 1 ? `${r} générations offertes restantes` : `${r} génération offerte restante`
+  const c = creditBalance.value
+  if (c === null) return null
+  return c > 1 ? `${c} crédits restants` : `${c} crédit restant`
 })
 
 // ─── Garde profil : pas de génération sans matière première ──────────────────
@@ -168,7 +167,7 @@ async function generate() {
     if (status === 403 || errorCode(err) === QUOTA_EXCEEDED_CODE) {
       // Le refresh fait passer remaining à 0 → l'encart quota s'affiche seul.
       await refreshUsage()
-      toast.error('Quota atteint', 'Tu as épuisé tes générations offertes.')
+      toast.error('Plus de crédits', 'Achète un pack pour continuer à générer.')
     } else if (status === 422) {
       toast.error('Génération impossible', errorMessage(err, 'Réessaie dans quelques instants.'))
     } else if (status === 409) {
@@ -363,20 +362,20 @@ watch(step, async (s) => {
               </p>
             </div>
 
-            <!-- Quota épuisé : on explique et on oriente vers les crédits -->
+            <!-- Solde épuisé : on explique et on oriente vers l'achat de crédits -->
             <div
               v-if="quotaExhausted"
               class="flex flex-wrap items-center justify-between gap-3 rounded-card bg-danger-50 p-4 ring-1 ring-danger-200"
             >
               <p class="text-sm leading-relaxed text-danger-700">
-                Tu as utilisé toutes tes générations offertes ce mois-ci.
+                Tu n'as plus de crédits. Achète un pack pour continuer à générer.
               </p>
-              <a
-                href="/#tarifs"
+              <NuxtLink
+                to="/credits"
                 class="rounded text-sm font-semibold text-danger-700 underline underline-offset-2 transition-colors duration-300 ease-out hover:text-danger-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-500"
               >
-                Recharger en crédits
-              </a>
+                Acheter des crédits
+              </NuxtLink>
             </div>
 
             <div class="flex flex-wrap items-center justify-end gap-3 pt-1">

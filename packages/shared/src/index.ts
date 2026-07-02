@@ -39,3 +39,6 @@ export * from './match.js'
 
 // Candidature persistée (offre + CV éditable + suivi).
 export * from './candidature.js'
+
+// Billing — contrats d'achat de crédits (Stripe Checkout).
+export * from './billing.js'

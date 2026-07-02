@@ -19,6 +19,7 @@ const navLinks = [
   { label: 'Nouvelle candidature', to: '/candidature' },
   { label: 'Mon profil', to: '/profil' },
   { label: 'Mes candidatures', to: '/candidatures' },
+  { label: 'Crédits', to: '/credits' },
 ] as const
 
 function isActive(to: string) {

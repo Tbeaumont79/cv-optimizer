@@ -74,13 +74,19 @@ describe('buildUsageSummary', () => {
   it('assemble période + compteur + un quota par type', () => {
     const summary = buildUsageSummary(
       '202606',
-      { ...EMPTY_USAGE_SNAPSHOT, generation: 5 },
+      { ...EMPTY_USAGE_SNAPSHOT, generation: 5, export_pdf: 4 },
       FREE_TIER_QUOTAS,
     )
     expect(summary.period).toBe('202606')
     expect(summary.counter.generation).toBe(5)
     expect(summary.quotas.map((q) => q.type)).toEqual(['generation', 'export_pdf', 'extraction'])
+    // La génération n'est plus bornée par un quota mensuel (gouvernée par les crédits).
     const gen = summary.quotas.find((q) => q.type === 'generation')!
-    expect(gen.exceeded).toBe(true) // 5 utilisées ≥ quota gratuit (2)
+    expect(gen.limit).toBeNull()
+    expect(gen.exceeded).toBe(false)
+    // L'export PDF reste borné par période (4) → 4 utilisés = atteint.
+    const pdf = summary.quotas.find((q) => q.type === 'export_pdf')!
+    expect(pdf.limit).toBe(4)
+    expect(pdf.exceeded).toBe(true)
   })
 })
