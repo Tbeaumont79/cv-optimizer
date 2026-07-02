@@ -17,9 +17,10 @@ export default defineNuxtConfig({
   // en Report-Only tant qu'elle n'a pas été validée au navigateur (elle n' observe
   // et ne bloque RIEN dans cet état — voir /api/_security si besoin).
   security: {
-    // CSP en Report-Only : le header envoyé est `Content-Security-Policy-Report-Only`,
-    // qui n'BLOQUE rien (observe seulement). Passer à `false` après validation navigateur.
-    contentSecurityPolicyReportOnly: true,
+    // CSP ACTIVE (bloquante) : validée au navigateur via le collecteur /api/csp-report
+    // (0 violation après allowlist Google Fonts). Le header report-uri reste actif pour
+    // continuer à monitorer d'éventuelles violations en prod.
+    contentSecurityPolicyReportOnly: false,
     // Rate-limit global désactivé : on gère finement ailleurs (Better Auth pour le
     // magic-link, compteur par utilisateur pour /analyze). Le limiteur intégré est
     // par-IP en mémoire (par instance) → insuffisant pour l'abus économique.
@@ -38,12 +39,17 @@ export default defineNuxtConfig({
         'object-src': ["'none'"],
         'frame-ancestors': ["'none'"],
         'img-src': ["'self'", 'data:'],
-        'font-src': ["'self'"],
-        'style-src': ["'self'", "'unsafe-inline'"],
+        // Google Fonts pour le rendu du CV (cv-html.ts injecte un <link> selon la
+        // police du design). Suivi #3 : auto-héberger ces polices pour retirer ces
+        // deux hôtes distants et la requête sortante au rendu.
+        'font-src': ["'self'", 'https://fonts.gstatic.com'],
+        'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         'script-src': ["'self'", "'nonce-{{nonce}}'", "'strict-dynamic'"],
         'connect-src': ["'self'"],
         'form-action': ["'self'"],
         'upgrade-insecure-requests': true,
+        // Collecteur de violations (phase Report-Only) — voir server/api/csp-report.
+        'report-uri': ['/api/csp-report'],
       },
       strictTransportSecurity: { maxAge: 63072000, includeSubdomains: true, preload: true },
       xFrameOptions: 'DENY',
